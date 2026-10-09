@@ -53,9 +53,10 @@
   }
   function resize(instance, slot) {
     const rect = instance.section.getBoundingClientRect();
-    const ratio = Math.min(devicePixelRatio || 1, 1.5) * slot.scale;
-    const width = Math.max(1, Math.min(1600, Math.round(rect.width * ratio)));
-    const height = Math.max(1, Math.min(1300, Math.round(rect.height * ratio)));
+    // A shared scale preserves aspect ratio and caps full-screen shader fill rate.
+    const ratio = Math.min(devicePixelRatio || 1, 1.5, 1600 / rect.width, 1300 / rect.height, Math.sqrt(950000 / (rect.width * rect.height))) * slot.scale;
+    const width = Math.max(1, Math.round(rect.width * ratio));
+    const height = Math.max(1, Math.round(rect.height * ratio));
     if (slot.width === width && slot.height === height) return;
     slot.width = width; slot.height = height;
     slot.renderer.setSize(width, height, false); slot.main.setSize(width, height);
@@ -81,7 +82,7 @@
       instance.frames++;
       // Reduce fill rate under sustained pressure without changing simulation counts.
       if (dt > .024) slot.slow++; else slot.slow = Math.max(0, slot.slow - 1);
-      if (slot.slow > 45 && slot.scale > .5) { slot.scale *= .8; slot.slow = 0; }
+      if (slot.slow > 8 && slot.scale > .4) { slot.scale = Math.max(.4, slot.scale * .8); slot.slow = 0; }
     } catch (_) { instance.failed = true; release(instance); reconcile(); document.dispatchEvent(new CustomEvent('cryonexus:graphics', { detail: 'fallback' })); return; }
     instance.raf = requestAnimationFrame(time => draw(instance, time));
   }

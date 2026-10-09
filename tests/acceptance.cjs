@@ -51,7 +51,7 @@ async function staticAcceptance() {
 function instrument() {
   const monitor = window.__acceptance = {
     rafRequests: 0, rafCallbacks: 0, contexts: [], builds: [], audioContexts: [],
-    gestures: [], phaseEvents: [], contextEvents: { lost: 0, restored: 0 },
+    gestures: [], phaseEvents: [], phaseTimers: [], contextEvents: { lost: 0, restored: 0 },
   };
   const getContext = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function (type, ...args) {
@@ -79,6 +79,20 @@ function instrument() {
     window.AudioContext = ObservedAudioContext;
     if (window.webkitAudioContext) window.webkitAudioContext = ObservedAudioContext;
   }
+  const interval = window.setInterval.bind(window), clearInterval = window.clearInterval.bind(window);
+  window.setInterval = (callback, delay, ...args) => {
+    const marker = Number(delay) === 5200 ? { delay: Number(delay), scheduledAt: performance.now(), ticks: [], active: true } : null;
+    const id = interval(marker && typeof callback === 'function' ? function (...values) {
+      marker.ticks.push(performance.now()); callback.apply(window, values);
+    } : callback, delay, ...args);
+    if (marker) { marker.id = id; monitor.phaseTimers.push(marker); }
+    return id;
+  };
+  window.clearInterval = id => {
+    const marker = monitor.phaseTimers.find(timer => timer.id === id);
+    if (marker) marker.active = false;
+    clearInterval(id);
+  };
   document.addEventListener('pointerdown', () => monitor.gestures.push('pointer'), true);
   document.addEventListener('keydown', () => monitor.gestures.push('keyboard'), true);
   document.addEventListener('cryonexus:scene', event => monitor.builds.push(event.detail));
@@ -331,8 +345,17 @@ async function fullRun(browser, url, name, viewport) {
   assert.equal(await page.locator('[data-phase][aria-pressed="true"]').count(), 1);
   const phaseDescription = await page.locator('#phase-description').innerText();
   assert(phaseDescription.length > 10);
-  await page.waitForFunction(() => document.querySelector('[data-phase="3"]').getAttribute('aria-pressed') === 'false',
-    null, { timeout: 6200, polling: 100 });
+  const phaseTimer = await page.evaluate(() => __acceptance.phaseTimers.filter(timer => timer.active).at(-1));
+  assert(phaseTimer && phaseTimer.delay === 5200, 'Automatic phases must use the specified5.2-second interval');
+  try {
+    await page.waitForFunction(() => document.querySelector('[data-phase="3"]').getAttribute('aria-pressed') === 'false',
+      null, { timeout: 10_000, polling: 100 });
+  } catch (error) {
+    const state = await page.evaluate(() => ({ hidden: document.hidden, reduced: matchMedia('(prefers-reduced-motion: reduce)').matches,
+      phase: document.querySelector('[data-phase][aria-pressed="true"]').dataset.phase,
+      timers: __acceptance.phaseTimers, events: __acceptance.phaseEvents }));
+    throw new Error(`${error.message}\nPhase diagnostics: ${JSON.stringify(state)}`);
+  }
   assert.equal(await page.locator('[data-phase][aria-pressed="true"]').count(), 1);
   // An earlier node pointer gesture can activate the drone; explicit toggle still must work both ways.
   if (await page.locator('#audio-toggle').getAttribute('aria-pressed') === 'true') await page.locator('#audio-toggle').click();

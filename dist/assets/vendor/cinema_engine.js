@@ -4,7 +4,8 @@
   const T = window.THREE;
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const instances = [], slots = [];
-  let disabled = !T, selectedPhase = 0;
+  const disabled = !T;
+  let selectedPhase = 0;
   const audio = { context: null, analyser: null, gain: null, data: null, enabled: false };
   const quadVertex = 'varying vec2 vUv; void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}';
   const shaders = {
@@ -32,9 +33,9 @@
     const blurMat = material(shaders.blur, { source: { value: bright.texture }, direction: { value: new T.Vector2() } });
     const compositeMat = material(shaders.composite, { source: { value: main.texture }, bloom: { value: vertical.texture }, time: { value: 0 }, height: { value: 1 } });
     const quad = new T.Mesh(new T.PlaneGeometry(2, 2), brightMat); postScene.add(quad);
-    const slot = { renderer, main, bright, horizontal, vertical, postScene, postCamera, quad, brightMat, blurMat, compositeMat, owner: null, width: 0, height: 0, scale: 1, slow: 0 };
-    surface.addEventListener('webglcontextlost', event => { event.preventDefault(); disabled = true; reconcile(); document.dispatchEvent(new CustomEvent('cryonexus:graphics', { detail: 'fallback' })); });
-    surface.addEventListener('webglcontextrestored', () => { disabled = false; slot.width = 0; reconcile(); });
+    const slot = { renderer, main, bright, horizontal, vertical, postScene, postCamera, quad, brightMat, blurMat, compositeMat, owner: null, lost: false, width: 0, height: 0, scale: 1, slow: 0 };
+    surface.addEventListener('webglcontextlost', event => { event.preventDefault(); slot.lost = true; reconcile(); document.dispatchEvent(new CustomEvent('cryonexus:graphics', { detail: 'fallback' })); });
+    surface.addEventListener('webglcontextrestored', () => { slot.lost = false; slot.width = 0; reconcile(); });
     slots.push(slot); return slot;
   }
   function bands(t) {
@@ -88,11 +89,11 @@
   }
   function reconcile() {
     const candidates = disabled || motion.matches || document.hidden ? [] : instances.filter(i => i.visible && !i.paused && !i.failed).sort((a, b) => b.ratio - a.ratio).slice(0, 2);
-    instances.forEach(i => { if (!candidates.includes(i)) release(i); });
+    instances.forEach(i => { if (!candidates.includes(i) || i.slot?.lost) release(i); });
     candidates.forEach(i => {
       if (i.running) return;
       try {
-        const slot = slots.find(s => !s.owner) || (slots.length < 2 ? createSlot() : null);
+        const slot = slots.find(s => !s.owner && !s.lost) || (slots.length < 2 ? createSlot() : null);
         if (!slot) return;
         slot.owner = i; i.slot = slot; i.section.insertBefore(slot.renderer.domElement, i.canvas.nextSibling);
         slot.width = 0; i.running = true; i.last = performance.now(); i.raf = requestAnimationFrame(time => draw(i, time));

@@ -356,9 +356,15 @@ async function contextRecovery(browser, url) {
   await page.waitForFunction(() => __acceptance.contextEvents.lost === 2 && cinema.getStats().running === 0,
     null, { timeout: 10_000, polling: 100 });
   await commands(page);
+  const lostFrames = await page.evaluate(() => Object.fromEntries(cinema.getStats().scenes.map(scene => [scene.id, scene.frames])));
   await page.evaluate(() => __acceptance.lossExtensions[0].restoreContext());
-  await page.waitForFunction(() => __acceptance.contextEvents.restored === 1 && cinema.getStats().running === 1,
-    null, { timeout: 10_000, polling: 100 });
+  await page.waitForFunction(before => {
+    const stats = cinema.getStats(), active = stats.scenes.find(scene => scene.running);
+    if (__acceptance.contextEvents.restored !== 1 || stats.running !== 1 || !active || active.frames <= before[active.id]) return false;
+    const rect = document.getElementById(active.id).closest('section').getBoundingClientRect();
+    return rect.bottom > 0 && rect.top < innerHeight;
+  }, lostFrames, { timeout: 10_000, polling: 100 });
+  await clean(run);
   const restored = await page.evaluate(() => ({
     lost: __acceptance.contexts.map(context => context.isContextLost()), stats: cinema.getStats(),
   }));

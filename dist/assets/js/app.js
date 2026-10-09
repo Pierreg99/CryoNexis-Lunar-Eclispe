@@ -436,6 +436,10 @@
       if (revealObserver) revealObserver.disconnect();
       if (countObserver) countObserver.disconnect();
       if (fps) fps.textContent = '—';
+      // Flush the reduced-motion styles and cancel transitions already pending.
+      if (typeof document.getAnimations === 'function') {
+        document.getAnimations().forEach(function (animation) { animation.cancel(); });
+      }
     } else startFrames();
   }
   motion.addEventListener('change', motionChanged);

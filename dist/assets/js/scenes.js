@@ -9,11 +9,16 @@
     float hash(vec3 p){p=fract(p*.3183099+vec3(.1,.2,.3));p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
     float noise3(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
     float fbm(vec3 p){float n=0.,a=.5;for(int i=0;i<5;i++){n+=a*noise3(p);p=p*2.03+vec3(4.1,1.7,8.2);a*=.5;}return n;}`;
-  const surfaceVertex = `varying vec3 vPosition;varying vec3 vNormal;varying vec3 vWorld;void main(){vPosition=position;vNormal=normalize(mat3(modelMatrix)*normal);vWorld=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`;
+  const surfaceVertex = `varying vec3 vPosition;varying vec3 vNormal;varying vec3 vWorld;
+    void main(){vec4 p=vec4(position,1.);vec3 n=normal;
+    #ifdef USE_INSTANCING
+      mat3 im=mat3(instanceMatrix);n/=vec3(dot(im[0],im[0]),dot(im[1],im[1]),dot(im[2],im[2]));n=im*n;p=instanceMatrix*p;
+    #endif
+      vPosition=p.xyz;vNormal=normalize(mat3(modelMatrix)*n);vWorld=(modelMatrix*p).xyz;gl_Position=projectionMatrix*modelViewMatrix*p;}`;
   function iceMaterial(color = 0x7fe8ff, side = T.FrontSide) {
-    return new T.ShaderMaterial({ side, uniforms: { time: { value: 0 }, pulse: { value: .3 }, tint: { value: new T.Color(color) } }, vertexShader: surfaceVertex, fragmentShader: `${noise}
-      uniform float time;uniform float pulse;uniform vec3 tint;varying vec3 vPosition;varying vec3 vNormal;varying vec3 vWorld;
-      void main(){vec3 n=normalize(vNormal);vec3 view=normalize(cameraPosition-vWorld);float rim=pow(1.-abs(dot(n,view)),2.5);float veins=pow(1.-abs(sin(fbm(vPosition*2.4)*24.+vPosition.y*2.)),12.);float cloudy=fbm(vPosition*3.+time*.03);float light=max(0.,dot(n,normalize(vec3(-2.,4.,5.))));vec3 c=tint*(.045+light*.2+cloudy*.11);c+=tint*(rim*.95+veins*(.18+pulse*.25));c+=vec3(.24,.3,.45)*pow(cloudy,4.);gl_FragColor=vec4(c,1.);}` });
+    return new T.ShaderMaterial({ side, uniforms: { time: { value: 0 }, pulse: { value: .3 }, intensity: { value: 1 }, tint: { value: new T.Color(color) } }, vertexShader: surfaceVertex, fragmentShader: `${noise}
+      uniform float time;uniform float pulse;uniform float intensity;uniform vec3 tint;varying vec3 vPosition;varying vec3 vNormal;varying vec3 vWorld;
+      void main(){vec3 n=normalize(vNormal);vec3 view=normalize(cameraPosition-vWorld);float rim=pow(1.-abs(dot(n,view)),2.5);float veins=pow(1.-abs(sin(fbm(vPosition*2.4)*24.+vPosition.y*2.)),12.);float cloudy=fbm(vPosition*3.+time*.03);float light=max(0.,dot(n,normalize(vec3(-2.,4.,5.))));vec3 c=tint*(.045+light*.2+cloudy*.11);c+=tint*(rim*.95+veins*(.18+pulse*.25));c+=vec3(.24,.3,.45)*pow(cloudy,4.);gl_FragColor=vec4(c*intensity,1.);}` });
   }
   function lines(geometry, color, opacity = .25) { return new T.LineSegments(new T.WireframeGeometry(geometry), new T.LineBasicMaterial({ color, transparent: true, opacity, depthWrite: false, blending: T.AdditiveBlending })); }
   function particles(count, radius, color, size, mode = 'sphere') {
@@ -25,14 +30,14 @@
       positions.set([x, y, z], i * 3); phases[i] = random() * TAU; sizes[i] = .4 + random() * .9;
     }
     const geometry = new T.BufferGeometry(); geometry.setAttribute('position', new T.BufferAttribute(positions, 3)); geometry.setAttribute('phase', new T.BufferAttribute(phases, 1)); geometry.setAttribute('scale', new T.BufferAttribute(sizes, 1));
-    const material = new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { time: { value: 0 }, tint: { value: new T.Color(color) }, size: { value: size } }, vertexShader: `uniform float time;uniform float size;attribute float phase;attribute float scale;varying float alpha;void main(){vec3 p=position;p.x+=sin(time*.12+phase+p.y)*.12;p.y+=cos(time*.15+phase)*.14;vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=min(7.,size*scale*80./max(1.,-mv.z));alpha=.3+.7*pow(.5+.5*sin(time*.4+phase),2.);}`, fragmentShader: 'uniform vec3 tint;varying float alpha;void main(){float r=length(gl_PointCoord-.5);if(r>.5)discard;float glow=exp(-r*r*18.)*alpha;gl_FragColor=vec4(tint*1.5,glow);}' });
+    const material = new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { time: { value: 0 }, tint: { value: new T.Color(color) }, size: { value: size }, opacity: { value: .42 } }, vertexShader: `uniform float time;uniform float size;attribute float phase;attribute float scale;varying float alpha;void main(){vec3 p=position;p.x+=sin(time*.12+phase+p.y)*.12;p.y+=cos(time*.15+phase)*.14;vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=min(7.,size*scale*80./max(1.,-mv.z));alpha=.3+.7*pow(.5+.5*sin(time*.4+phase),2.);}`, fragmentShader: 'uniform vec3 tint;uniform float opacity;varying float alpha;void main(){float r=length(gl_PointCoord-.5);if(r>.5)discard;float glow=exp(-r*r*18.)*alpha;gl_FragColor=vec4(tint*1.5,glow*opacity);}' });
     return new T.Points(geometry, material);
   }
   function plane(fragment, uniforms, size = 12) { return new T.Mesh(new T.PlaneGeometry(size, size), new T.ShaderMaterial({ uniforms, vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}', fragmentShader: fragment, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); }
   function subjectX(camera) { return camera.aspect < .85 ? 1.5 : 3.3; }
   function chamber(canvas) {
     return cinema.boot(canvas, ({ scene }) => {
-      const shell = new T.Mesh(new T.IcosahedronGeometry(24, 2), iceMaterial(0x4b8ea5, T.BackSide)); scene.add(shell);
+      const shell = new T.Mesh(new T.IcosahedronGeometry(24, 2), iceMaterial(0x4b8ea5, T.BackSide)); shell.material.uniforms.intensity.value = .055; scene.add(shell);
       const latticeGeometry = new T.IcosahedronGeometry(9.5, 1);
       const lattice = lines(latticeGeometry, 0x548ca0, .15); scene.add(lattice);
       const cage = lines(new T.IcosahedronGeometry(12, 0), 0x7fe8ff, .12); scene.add(cage);
@@ -41,7 +46,7 @@
       const crystalEdges = lines(crystal.geometry, 0x91d7e5, .38); crystal.add(crystalEdges);
       const orbit = lines(new T.TorusGeometry(3.65, .025, 3, 90), 0x7fe8ff, .36); orbit.rotation.x = 1.15; centerpiece.add(orbit);
       const orbit2 = lines(new T.TorusGeometry(4.05, .015, 3, 90), 0x8b7bff, .25); orbit2.rotation.set(.45, .5, .2); centerpiece.add(orbit2);
-      const motes = particles(6000, 19, 0x94e0ef, .28); scene.add(motes);
+      const motes = particles(6000, 19, 0x94e0ef, .16); scene.add(motes);
       return { shell, lattice, cage, centerpiece, crystal, orbit, orbit2, motes };
     }, ({ camera, refs: r, t, audio }) => {
       r.shell.material.uniforms.time.value = t; r.crystal.material.uniforms.time.value = t; r.crystal.material.uniforms.pulse.value = audio.bass;

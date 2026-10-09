@@ -99,7 +99,7 @@
     });
   }
   const visibility = new IntersectionObserver(entries => {
-    entries.forEach(entry => { const i = instances.find(item => item.section === entry.target); if (i) { i.visible = entry.isIntersecting; i.ratio = entry.intersectionRatio; } }); reconcile();
+    entries.forEach(entry => { const i = instances.find(item => item.section === entry.target); if (i) { i.visible = entry.isIntersecting && entry.intersectionRatio > 0; i.ratio = entry.intersectionRatio; } }); reconcile();
   }, { threshold: [0, .01, .25, .5, .75, 1] });
   function boot(canvas, onBuild, onUpdate, opts = {}) {
     if (!T) throw new Error('Three.js unavailable');

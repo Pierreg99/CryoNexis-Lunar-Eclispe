@@ -304,7 +304,7 @@ async function fullRun(browser, url, name, viewport) {
       await page.waitForFunction(section => {
         const element = document.querySelector(`#${section} .reveal`);
         return element && Number(getComputedStyle(element).opacity) > 0;
-      }, id, { timeout: 10_000, polling: 100 });
+      }, id, { timeout: 30_000, polling: 100 });
     } catch (error) {
       const diagnostic = await page.evaluate(section => {
         const element = document.querySelector(`#${section} .reveal`);

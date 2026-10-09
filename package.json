@@ -1,0 +1,12 @@
+{
+  "name": "cryonexus-lunar-eclipse",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline procedural WebGL experience; tooling is development-only.",
+  "scripts": {
+    "test": "node tests/acceptance.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

@@ -7,7 +7,7 @@ Die App selbst benötigt nur die Dateien in `dist/`. Entwicklungswerkzeuge und T
 ## Lokal öffnen
 
 ```sh
-git clone --branch codex/lunar-eclipse https://github.com/Pierreg99/CryoNexis-Lunar-Eclispe.git
+git clone --branch main https://github.com/Pierreg99/CryoNexis-Lunar-Eclispe.git
 cd CryoNexis-Lunar-Eclispe
 python3 -m http.server 8080 --directory dist
 ```

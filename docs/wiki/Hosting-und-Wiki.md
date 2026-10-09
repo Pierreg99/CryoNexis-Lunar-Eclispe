@@ -22,7 +22,7 @@ assets/
   vendor/THREE-LICENSE.txt
 ```
 
-GitHub Pages bietet bei Branch-Veröffentlichung Root oder `/docs` als Quellordner an, nicht `/dist`. Verwende deshalb ein Pages-Artefakt aus `dist/` über GitHub Actions oder einen separaten Veröffentlichungsbranch mit dessen Inhalt im Root. Der Entwicklungsbranch `codex/lunar-eclipse` enthält die fertige Quelle; das Hauptbranch wurde nicht automatisch überschrieben.
+GitHub Pages bietet bei Branch-Veröffentlichung Root oder `/docs` als Quellordner an, nicht `/dist`. Verwende deshalb ein Pages-Artefakt aus `dist/` über GitHub Actions oder einen separaten Veröffentlichungsbranch mit dessen Inhalt im Root. Der Hauptbranch `main` enthält die fertige Quelle einschließlich Simulation, Tests und Handbuch. Der Merge allein veröffentlicht die App noch nicht über Pages.
 
 Relative Ressourcenpfade funktionieren auch unter einem Projektpfad. Nach der Veröffentlichung Sektionen, Assets, Tastatur, Klang, reduzierte Bewegung und Speicherung auf der echten Pages-Adresse prüfen. Ein anderer Origin besitzt einen eigenen lokalen Spielstand.
 

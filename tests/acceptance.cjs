@@ -145,6 +145,24 @@ async function clean(run) {
   assert.deepEqual(run.faults, [], 'The browser console and all local asset requests must be clean');
 }
 
+async function assertNoAnimations(page, label) {
+  const animations = await page.evaluate(() => document.getAnimations().map(animation => {
+    const effect = animation.effect, target = effect && effect.target;
+    const timing = effect ? effect.getTiming() : {};
+    return {
+      type: animation.constructor.name,
+      name: animation.animationName || animation.transitionProperty || '',
+      target: target ? `${target.tagName.toLowerCase()}${target.id ? '#' + target.id : ''}.${Array.from(target.classList).join('.')}` : '',
+      pseudo: effect && effect.pseudoElement || '',
+      playState: animation.playState,
+      currentTime: animation.currentTime,
+      duration: String(timing.duration),
+      iterations: String(timing.iterations),
+    };
+  }));
+  assert.deepEqual(animations, [], `${label}: reduced motion must leave no CSS animations or transitions`);
+}
+
 async function scrollTo(page, id) {
   await page.evaluate(section => {
     document.documentElement.style.scrollBehavior = 'auto';
@@ -338,7 +356,7 @@ async function fullRun(browser, url, name, viewport) {
     'Animation frames continue after a live reduced-motion preference change');
   assert.deepEqual(await page.evaluate(() => cinema.getStats().scenes.map(scene => scene.frames)), reducedState.frames);
   assert.equal(reducedState.running, 0);
-  assert.equal(await page.evaluate(() => document.getAnimations().length), 0);
+  await assertNoAnimations(page, `${name} live preference change`);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await assertVisibility(page);
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Horizontal overflow at viewport width');
@@ -415,7 +433,7 @@ async function reducedRun(browser, url, name) {
   assert.equal(state.contexts, 0, 'Reduced motion must avoid creating graphics contexts');
   assert.equal(state.stats.running, 0);
   assert.equal(state.rafRequests, 0, 'Reduced motion must not schedule animation frames');
-  assert.equal(state.animations, 0, 'Reduced motion must stop CSS animations and transitions');
+  await assertNoAnimations(page, `${name} initial reduced motion`);
   assert(state.visibleContent && !state.renderedCanvas, 'Reduced motion must preserve all readable content');
   await page.waitForTimeout(3000);
   assert.deepEqual(await page.locator('.node-price').allTextContents(), prices, 'Market animation continues in reduced motion');
@@ -429,7 +447,7 @@ async function reducedRun(browser, url, name) {
   assert.equal(await page.locator('[data-phase="4"]').getAttribute('aria-pressed'), 'true');
   await page.waitForTimeout(60);
   assert.equal(await page.evaluate(() => __acceptance.rafRequests), 0);
-  assert.equal(await page.evaluate(() => document.getAnimations().length), 0);
+  await assertNoAnimations(page, `${name} reduced motion after controls`);
   await page.screenshot({ path: path.join(artifacts, `${name}-reduced.png`) });
   // A preference change must prepare the preceding section inside the lazy margin too.
   await page.evaluate(() => {
@@ -444,6 +462,7 @@ async function reducedRun(browser, url, name) {
   await page.waitForFunction(() => cinema.getStats().running === 0,
     null, { timeout: 10_000, polling: 100 });
   assert.equal(await page.evaluate(() => cinema.getStats().running), 0);
+  await assertNoAnimations(page, `${name} return to reduced motion`);
   await clean(run);
   report.runs.push({ name, mode: 'reduced', state, environmentWarnings: run.environmentWarnings });
   await run.context.close();

@@ -360,7 +360,7 @@ async function contextRecovery(browser, url) {
   await page.evaluate(() => __acceptance.lossExtensions[0].restoreContext());
   await page.waitForFunction(before => {
     const stats = cinema.getStats(), active = stats.scenes.find(scene => scene.running);
-    if (__acceptance.contextEvents.restored !== 1 || stats.running !== 1 || !active || active.frames <= before[active.id]) return false;
+    if (__acceptance.contextEvents.restored !== 1 || stats.running !== 1 || !active || active.frames <= (before[active.id] || 0)) return false;
     const rect = document.getElementById(active.id).closest('section').getBoundingClientRect();
     return rect.bottom > 0 && rect.top < innerHeight;
   }, lostFrames, { timeout: 10_000, polling: 100 });

@@ -35,7 +35,17 @@
     const quad = new T.Mesh(new T.PlaneGeometry(2, 2), brightMat); postScene.add(quad);
     const slot = { renderer, main, bright, horizontal, vertical, postScene, postCamera, quad, brightMat, blurMat, compositeMat, owner: null, lost: false, width: 0, height: 0, scale: 1, slow: 0 };
     surface.addEventListener('webglcontextlost', event => { event.preventDefault(); slot.lost = true; reconcile(); document.dispatchEvent(new CustomEvent('cryonexus:graphics', { detail: 'fallback' })); });
-    surface.addEventListener('webglcontextrestored', () => { slot.lost = false; slot.width = 0; reconcile(); });
+    surface.addEventListener('webglcontextrestored', () => {
+      // Lost GPU handles are already destroyed. Fresh targets avoid invoking old
+      // dispose listeners against the restored context generation.
+      slot.main = target(); slot.main.depthBuffer = true;
+      slot.bright = target(); slot.horizontal = target(); slot.vertical = target();
+      slot.brightMat.uniforms.source.value = slot.main.texture;
+      slot.blurMat.uniforms.source.value = slot.bright.texture;
+      slot.compositeMat.uniforms.source.value = slot.main.texture;
+      slot.compositeMat.uniforms.bloom.value = slot.vertical.texture;
+      slot.lost = false; slot.width = 0; reconcile();
+    });
     slots.push(slot); return slot;
   }
   function bands(t) {

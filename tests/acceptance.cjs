@@ -50,7 +50,7 @@ async function staticAcceptance() {
 
 function instrument() {
   const monitor = window.__acceptance = {
-    rafRequests: 0, rafCallbacks: 0, contexts: [], builds: [], audioContexts: [],
+    rafRequests: 0, rafCallbacks: 0, contexts: [], builds: [], audioContexts: [], invalidRenderFrames: [],
     gestures: [], phaseEvents: [], phaseTimers: [], contextEvents: { lost: 0, restored: 0 },
   };
   const getContext = HTMLCanvasElement.prototype.getContext;
@@ -66,7 +66,19 @@ function instrument() {
   const raf = window.requestAnimationFrame.bind(window);
   window.requestAnimationFrame = callback => {
     monitor.rafRequests++;
-    return raf(time => { monitor.rafCallbacks++; callback(time); });
+    return raf(time => {
+      monitor.rafCallbacks++;
+      const before = window.cinema ? cinema.getStats().scenes : [];
+      callback(time);
+      if (window.cinema) cinema.getStats().scenes.forEach(scene => {
+        const previous = before.find(item => item.id === scene.id);
+        if (scene.frames <= (previous ? previous.frames : 0)) return;
+        const rect = document.getElementById(scene.id).closest('section').getBoundingClientRect();
+        if (document.hidden || rect.bottom <= 0 || rect.top >= innerHeight || rect.right <= 0 || rect.left >= innerWidth) {
+          monitor.invalidRenderFrames.push({ id: scene.id, top: rect.top, bottom: rect.bottom });
+        }
+      });
+    });
   };
   const Audio = window.AudioContext || window.webkitAudioContext;
   if (Audio) {
@@ -198,7 +210,7 @@ async function assertVisibility(page) {
       const r = section.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight;
     }).map(section => section.querySelector('canvas').id);
     const scenes = cinema.getStats().scenes;
-    return scenes.some(scene => scene.running) && scenes.filter(scene => scene.running)
+    return inView.every(id => scenes.some(scene => scene.id === id && scene.running)) && scenes.filter(scene => scene.running)
       .every(scene => inView.includes(scene.id));
   }, null, { timeout: 10_000, polling: 100 });
   const snapshot = await page.evaluate(() => ({
@@ -214,10 +226,17 @@ async function assertVisibility(page) {
   for (const scene of snapshot.stats.scenes.filter(scene => scene.running)) {
     assert(snapshot.inView.includes(scene.id), `${scene.id} is running outside the viewport`);
   }
-  const paused = snapshot.stats.scenes.filter(scene => !scene.running);
+  const paused = snapshot.stats.scenes.filter(scene => !scene.running && !snapshot.inView.includes(scene.id));
   await page.waitForTimeout(250);
-  const later = await page.evaluate(() => cinema.getStats());
+  const current = await page.evaluate(() => ({ stats: cinema.getStats(), invalid: __acceptance.invalidRenderFrames,
+    inView: Array.from(document.querySelectorAll('section')).filter(section => {
+      const rect = section.getBoundingClientRect(); return rect.bottom > 0 && rect.top < innerHeight;
+    }).map(section => section.querySelector('canvas').id) }));
+  const later = current.stats;
+  assert.deepEqual(current.invalid, [], 'A render frame occurred outside the viewport');
   for (const scene of paused) {
+    // A newly visible scene can legitimately resume while these snapshots are taken.
+    if (current.inView.includes(scene.id)) continue;
     assert.equal(later.scenes.find(item => item.id === scene.id).frames, scene.frames,
       `${scene.id} rendered while offscreen`);
   }

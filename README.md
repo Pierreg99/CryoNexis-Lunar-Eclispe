@@ -74,7 +74,7 @@ Szenen definieren statische `onBuild`- und animierte `onUpdate`-Callbacks. Die E
 
 Der Startwert 404 erzeugt reproduzierbare Markttakte; ein gespeicherter Zustand setzt auch die Zufallsfolge exakt fort. Preise driften je Takt höchstens ±0,6 %. Phasen kalibrieren neutrale Preise, statt bei jedem Wechsel erneut Multiplikatoren anzuwenden. Liquidität, Spread, Risiko, Halbwertszeit und Validatorenzahl reagieren auf Phase, Knotenstärke und Bindungen.
 
-`Vermögen = Guthaben + Marktwert der Positionen + Vault-Guthaben`. Handelsgebühren betragen `0,12 % + Strahlungsfluss × 0,08 %`. Slippage kombiniert halben Spread mit `min(Handelsvolumen / Liquidität × 0,035; 0,025)`. Die Kaufquote zeigt den vollständigen Betrag, die Verkaufsquote den tatsächlichen Erlös. Geld wird auf vier, Anteile auf sechs Nachkommastellen geführt; unzulässige Eingaben verändern nichts.
+`Vermögen = Guthaben + Marktwert der Positionen + Vault-Guthaben`. Handelsgebühren betragen `0,12 % + Phasen-Strahlungsfaktor × 0,08 %`. Slippage kombiniert halben Spread mit `min(Handelsvolumen / Liquidität × 0,035; 0,025)`. Die Kaufquote zeigt den vollständigen Betrag, die Verkaufsquote den tatsächlichen Erlös. Geld wird auf vier, Anteile auf sechs Nachkommastellen geführt; unzulässige Eingaben verändern nichts.
 
 `Stabilität = mittlere Knotenstärke × 0,7 + Kohärenz × 0,3 + Bindungen × 1,2 − Phasenlast`, begrenzt auf 0–100. Binden kostet 1.200 CNX und bringt bis zu sechs Stärkepunkte; Lösen bringt 400 CNX zurück. Stabilisieren kostet 700 CNX und erhöht Stärke um bis zu acht sowie Kohärenz um bis zu sieben Punkte. Der simulierte Jahreszins liegt zwischen 12 und 20 %. Je offenem Fünf-Minuten-Takt entsteht `Vault-Guthaben × Jahreszins / 100 × 5 / 525.600` Ertrag.
 

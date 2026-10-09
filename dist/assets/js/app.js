@@ -166,6 +166,7 @@
     view.held.textContent = precise.format(node.quantity) + ' / ' + number.format(node.positionValue) + ' CNX';
     view.strength.textContent = number.format(node.strength) + ' %';
     view.spread.textContent = number.format(node.spread) + ' %';
+    view.risk.textContent = number.format(node.risk) + ' / 100';
     view.halfLife.textContent = precise.format(node.halfLife) + ' h';
     view.validators.textContent = String(node.validators);
     view.binding.textContent = node.bound ? 'ZEITLICH GEBUNDEN' : 'VERFÜGBAR';
@@ -190,9 +191,9 @@
       '<div id="' + detailId + '" class="node-details" aria-hidden="true"><div class="node-details-inner"><dl>' +
       '<div><dt>Sektor</dt><dd>' + node.sector + '</dd></div><div><dt>Liquidität</dt><dd class="node-liquidity"></dd></div>' +
       '<div><dt>Halbwertszeit</dt><dd class="node-half-life"></dd></div><div><dt>Validatoren</dt><dd class="node-validators"></dd></div>' +
-      '<div><dt>Stärke</dt><dd class="node-strength"></dd></div><div><dt>Spread</dt><dd class="node-spread"></dd></div>' +
+      '<div><dt>Stärke</dt><dd class="node-strength"></dd></div><div><dt>Spread</dt><dd class="node-spread"></dd></div><div><dt>Simuliertes Risiko</dt><dd class="node-risk"></dd></div>' +
       '<div><dt>Bestand / Wert</dt><dd class="node-held"></dd></div></dl><div class="meter" aria-hidden="true"><i></i></div>' +
-      '<div class="node-actions"><label class="control-label" for="' + quantityId + '">Menge für ' + node.id + '</label>' +
+      '<div class="node-actions"><label class="control-label" for="' + quantityId + '">Anteile für ' + node.id + '</label>' +
       '<input class="simulation-input node-quantity" id="' + quantityId + '" value="1" inputmode="decimal" maxlength="16">' +
       '<p class="node-quote"></p><div class="simulation-controls"><button type="button" data-action="buy">Kaufen</button><button type="button" data-action="sell">Verkaufen</button></div>' +
       '<div class="simulation-controls"><button type="button" class="node-link" data-action="link"></button><button type="button" data-action="stabilize">Stabilisieren (700 CNX)</button></div></div></div></div>';
@@ -209,7 +210,7 @@
       article: article, price: article.querySelector('.node-price'), change: article.querySelector('.node-change'),
       liquidity: article.querySelector('.node-liquidity'), meter: article.querySelector('.meter i'),
       halfLife: article.querySelector('.node-half-life'), validators: article.querySelector('.node-validators'),
-      held: article.querySelector('.node-held'), strength: article.querySelector('.node-strength'), spread: article.querySelector('.node-spread'),
+      risk: article.querySelector('.node-risk'), held: article.querySelector('.node-held'), strength: article.querySelector('.node-strength'), spread: article.querySelector('.node-spread'),
       binding: article.querySelector('.node-binding'), link: article.querySelector('.node-link'), quantity: article.querySelector('.node-quantity'),
       quote: article.querySelector('.node-quote'), buy: article.querySelector('[data-action="buy"]'), sell: article.querySelector('[data-action="sell"]')
     };
@@ -233,6 +234,7 @@
     state.nodes.forEach(renderNode);
     setText('sim-cash', number.format(state.cash));
     setText('sim-equity', number.format(state.equity));
+    setText('sim-positions', 'POSITIONEN ' + number.format(state.portfolioValue) + ' CNX');
     setText('sim-stability', number.format(state.stability) + ' %');
     setText('sim-coherence', number.format(state.coherence) + ' %');
     setText('sim-time', 'ZYKLUS ' + state.cycle + ' / ' + precise.format(state.minutes) + ' MIN / ' + state.phaseName + (state.paused ? ' / PAUSIERT' : motion.matches ? ' / MANUELLE ZEIT' : ' / AKTIV'));

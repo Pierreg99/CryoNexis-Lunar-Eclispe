@@ -12,7 +12,9 @@ const dist = path.join(root, 'dist');
 const artifacts = path.join(__dirname, 'artifacts');
 const sectionIds = ['chamber', 'eclipse', 'ice-ring', 'nodes', 'terminal', 'void'];
 const sceneIds = ['cn-chamber', 'cn-eclipse', 'cn-nexus', 'cn-crystal', 'cn-vault', 'cn-void'];
-const report = { browser: '', payloadBytes: 0, runs: [], blocked: [] };
+const report = { browser: '', payloadBytes: 0, runs: [], blocked: [], status: 'running' };
+const suites = new Set((process.env.ACCEPTANCE_SUITE || 'all').split(','));
+const enabled = suite => suites.has('all') || suites.has(suite);
 
 async function files(directory) {
   const entries = await fs.readdir(directory, { withFileTypes: true });
@@ -252,7 +254,9 @@ async function fullRun(browser, url, name, viewport) {
       const element = document.querySelector(`#${section} .reveal`);
       return element && Number(getComputedStyle(element).opacity) > 0;
     }, id, { timeout: 10_000, polling: 100 });
-    await page.screenshot({ path: path.join(artifacts, `${name}-${id}.png`) });
+    if (process.env.CAPTURE_ALL_SECTIONS === '1') {
+      await page.screenshot({ path: path.join(artifacts, `${name}-${id}.png`) });
+    }
   }
   const final = visits.at(-1);
   assert.deepEqual(final.scenes.map(scene => scene.id).sort(), sceneIds.slice().sort());
@@ -314,7 +318,8 @@ async function fullRun(browser, url, name, viewport) {
   await page.locator('#audio-toggle').click();
   assert.equal(await page.locator('#audio-toggle').getAttribute('aria-pressed'), 'false');
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.waitForTimeout(350);
+  await page.waitForFunction(() => matchMedia('(prefers-reduced-motion: reduce)').matches && cinema.getStats().running === 0,
+    null, { timeout: 10_000, polling: 100 });
   const reducedState = await page.evaluate(() => ({ requests: __acceptance.rafRequests,
     frames: cinema.getStats().scenes.map(scene => scene.frames), running: cinema.getStats().running }));
   await page.waitForTimeout(350);
@@ -419,7 +424,8 @@ async function reducedRun(browser, url, name) {
     null, { timeout: 10_000, polling: 100 });
   await assertVisibility(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.waitForTimeout(350);
+  await page.waitForFunction(() => cinema.getStats().running === 0,
+    null, { timeout: 10_000, polling: 100 });
   assert.equal(await page.evaluate(() => cinema.getStats().running), 0);
   await clean(run);
   report.runs.push({ name, mode: 'reduced', state, environmentWarnings: run.environmentWarnings });
@@ -439,6 +445,9 @@ async function bootFailsafe(browser, url) {
 }
 
 async function main() {
+  assert(Array.from(suites).every(suite => ['all', 'desktop', 'mobile', 'reduced', 'recovery', 'boot'].includes(suite)),
+    'Unknown ACCEPTANCE_SUITE; use all, desktop, mobile, reduced, recovery or boot');
+  report.suites = Array.from(suites);
   await fs.mkdir(artifacts, { recursive: true });
   await staticAcceptance();
   const mime = { '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript', '.txt': 'text/plain' };
@@ -469,24 +478,33 @@ async function main() {
   report.browser = browser.version();
   try {
     let fileAllowed = true;
-    try { await fullRun(browser, file, 'file-desktop'); }
-    catch (error) {
-      if (!/ERR_BLOCKED_BY_ADMINISTRATOR/.test(error.message)) throw error;
+    const attemptFile = async (name, action) => {
+      if (fileAllowed) {
+        try { await action(); return; }
+        catch (error) { if (!/ERR_BLOCKED_BY_ADMINISTRATOR/.test(error.message)) throw error; }
+      }
       fileAllowed = false;
-      report.blocked.push({ name: 'file-desktop', reason: 'Managed Chromium URL policy blocks file:// navigation.' });
+      report.blocked.push({ name, reason: 'Managed Chromium URL policy blocks file:// navigation.' });
       console.log('BLOCKED file://: Chromium administrator URL policy; HTTP tests will continue');
+    };
+    if (enabled('desktop')) {
+      await attemptFile('file-desktop', () => fullRun(browser, file, 'file-desktop'));
+      await fullRun(browser, local, 'http-desktop');
     }
-    await fullRun(browser, local, 'http-desktop');
-    await fullRun(browser, local, 'http-mobile', { width: 390, height: 844 });
-    if (fileAllowed) await reducedRun(browser, file, 'file-mobile');
-    else report.blocked.push({ name: 'file-mobile-reduced', reason: 'Managed Chromium URL policy blocks file:// navigation.' });
-    await reducedRun(browser, local, 'http-mobile');
-    await contextRecovery(browser, local);
-    await bootFailsafe(browser, local);
-    await fs.writeFile(path.join(artifacts, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
+    if (enabled('mobile')) await fullRun(browser, local, 'http-mobile', { width: 390, height: 844 });
+    if (enabled('reduced')) {
+      await attemptFile('file-mobile-reduced', () => reducedRun(browser, file, 'file-mobile'));
+      await reducedRun(browser, local, 'http-mobile');
+    }
+    if (enabled('recovery')) await contextRecovery(browser, local);
+    if (enabled('boot')) await bootFailsafe(browser, local);
     console.log(`PASS payload ${report.payloadBytes} bytes; Chromium ${report.browser}; ${report.runs.length} browser runs; ${report.blocked.length} policy-blocked runs`);
     if (!fileAllowed && process.env.REQUIRE_FILE_TEST === '1') throw new Error('Required file:// browser validation was blocked by administrator policy');
+    report.status = 'passed';
+  } catch (error) {
+    report.status = 'failed'; report.error = error.message; throw error;
   } finally {
+    await fs.writeFile(path.join(artifacts, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
     await browser.close();
     await new Promise(resolve => server.close(resolve));
   }

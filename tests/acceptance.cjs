@@ -95,6 +95,17 @@ async function open(browser, url, options = {}) {
   if (options.freezeIntervals) await context.addInitScript(() => {
     window.setInterval = () => 0;
     window.clearInterval = () => {};
+    const timeout = window.setTimeout.bind(window);
+    window.setTimeout = function (callback, delay, ...args) {
+      if (delay !== 4200 || typeof callback !== 'function') return timeout(callback, delay, ...args);
+      const timer = window.__acceptance.bootTimer = { scheduledAt: performance.now(), delay };
+      return timeout(() => {
+        callback(...args);
+        timer.completedAt = performance.now();
+        const boot = document.getElementById('boot');
+        timer.released = !!boot && boot.classList.contains('done') && getComputedStyle(boot).pointerEvents === 'none';
+      }, delay);
+    };
   });
   const page = await context.newPage();
   const faults = [], environmentWarnings = [], external = [], requests = [];
@@ -440,13 +451,15 @@ async function reducedRun(browser, url, name) {
 }
 
 async function bootFailsafe(browser, url) {
-  const start = Date.now();
   const run = await open(browser, url, { freezeIntervals: true });
-  const elapsed = Date.now() - start;
-  assert(elapsed < 5500, `Boot escape timer took ${elapsed}ms with progress intervals stopped`);
+  const timer = await run.page.evaluate(() => __acceptance.bootTimer);
+  assert(timer && timer.delay === 4200, 'An independent 4.2-second timer must be scheduled');
+  const elapsed = timer.completedAt - timer.scheduledAt;
+  assert(timer.released, 'The deadline did not release the overlay with progress intervals stopped');
+  assert(elapsed >= 4200 && elapsed < 4700, `Boot deadline callback took ${elapsed}ms after scheduling`);
   await clean(run);
   await run.context.close();
-  report.runs.push({ name: 'boot-failsafe', elapsed });
+  report.runs.push({ name: 'boot-failsafe', elapsed, timer });
   console.log('PASS boot failsafe: overlay closes with all progress intervals stopped');
 }
 

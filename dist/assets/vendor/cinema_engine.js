@@ -52,8 +52,7 @@
     cancelAnimationFrame(instance.raf); instance.raf = 0; instance.running = false;
     if (instance.slot) { instance.slot.owner = null; instance.slot.renderer.domElement.remove(); instance.slot = null; }
   }
-  function resize(instance, slot) {
-    const rect = instance.section.getBoundingClientRect();
+  function resize(instance, slot, rect) {
     // A shared scale preserves aspect ratio and caps full-screen shader fill rate.
     const ratio = Math.min(devicePixelRatio || 1, 1.5, 1600 / rect.width, 1300 / rect.height, Math.sqrt(950000 / (rect.width * rect.height))) * slot.scale;
     const width = Math.max(1, Math.round(rect.width * ratio));
@@ -68,10 +67,16 @@
   function draw(instance, now) {
     instance.raf = 0;
     if (!instance.running || !instance.slot) return;
+    // Observer delivery can lag under load; enforce visibility before every draw.
+    const rect = instance.section.getBoundingClientRect();
+    if (document.hidden || motion.matches || rect.bottom <= 0 || rect.top >= innerHeight || rect.right <= 0 || rect.left >= innerWidth) {
+      if (rect.bottom <= 0 || rect.top >= innerHeight || rect.right <= 0 || rect.left >= innerWidth) { instance.visible = false; instance.ratio = 0; }
+      release(instance); reconcile(); return;
+    }
     const slot = instance.slot, renderer = slot.renderer;
     const dt = Math.min(.05, (now - instance.last) / 1000 || 0); instance.last = now; instance.time += dt;
     try {
-      resize(instance, slot);
+      resize(instance, slot, rect);
       instance.update({ T, scene: instance.scene, camera: instance.camera, refs: instance.refs, t: instance.time, dt, audio: bands(instance.time), phase: selectedPhase });
       renderer.setClearColor(instance.clear, 1);
       renderer.setRenderTarget(slot.main); renderer.render(instance.scene, instance.camera);

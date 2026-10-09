@@ -6,6 +6,35 @@
   const instances = [], slots = [];
   const disabled = !T;
   let selectedPhase = 0;
+  let hasSimulation = false;
+  let simulation = {
+    phase: 0, coherence: .8, stability: .8, flux: .35, corona: .45, temperature: -268,
+    bindings: [false, false, false, false, false, false],
+    strengths: [.84, .92, .78, .96, .68, .88], holdings: [0, 0, 0, 0, 0, 0],
+    vaultOpen: false, vaultPower: .2, echoes: 0
+  };
+  // Only validate display inputs here. Decisions and state transitions belong to the model.
+  const unit = (value, fallback) => Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : fallback;
+  function receiveSimulation(event) {
+    const data = event.detail;
+    if (!data || typeof data !== 'object') return;
+    const previous = simulation;
+    const six = (key, boolean) => Array.from({ length: 6 }, (_, index) =>
+      boolean ? typeof data[key]?.[index] === 'boolean' ? data[key][index] : previous[key][index]
+        : unit(data[key]?.[index], previous[key][index]));
+    simulation = {
+      phase: Number.isInteger(data.phase) ? Math.max(0, Math.min(4, data.phase)) : previous.phase,
+      coherence: unit(data.coherence, previous.coherence), stability: unit(data.stability, previous.stability),
+      flux: unit(data.flux, previous.flux), corona: unit(data.corona, previous.corona),
+      temperature: Number.isFinite(data.temperature) ? data.temperature : previous.temperature,
+      bindings: six('bindings', true), strengths: six('strengths'), holdings: six('holdings'),
+      vaultOpen: typeof data.vaultOpen === 'boolean' ? data.vaultOpen : previous.vaultOpen,
+      vaultPower: unit(data.vaultPower, previous.vaultPower),
+      echoes: Number.isFinite(data.echoes) ? Math.max(0, data.echoes) : previous.echoes
+    };
+    hasSimulation = true;
+    selectedPhase = simulation.phase;
+  }
   const audio = { context: null, analyser: null, gain: null, data: null, enabled: false };
   const quadVertex = 'varying vec2 vUv; void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}';
   const shaders = {
@@ -87,7 +116,7 @@
     const dt = Math.min(.05, (now - instance.last) / 1000 || 0); instance.last = now; instance.time += dt;
     try {
       resize(instance, slot, rect);
-      instance.update({ T, scene: instance.scene, camera: instance.camera, refs: instance.refs, t: instance.time, dt, audio: bands(instance.time), phase: selectedPhase });
+      instance.update({ T, scene: instance.scene, camera: instance.camera, refs: instance.refs, t: instance.time, dt, audio: bands(instance.time), phase: selectedPhase, simulation });
       renderer.setClearColor(instance.clear, 1);
       renderer.setRenderTarget(slot.main); renderer.render(instance.scene, instance.camera);
       const pass = (mat, target) => { slot.quad.material = mat; renderer.setRenderTarget(target); renderer.render(slot.postScene, slot.postCamera); };
@@ -149,6 +178,11 @@
   }
   document.addEventListener('visibilitychange', () => { reconcile(); if (audio.gain) audio.gain.gain.setTargetAtTime(document.hidden || !audio.enabled ? 0 : .38, audio.context.currentTime, .2); });
   motion.addEventListener('change', reconcile);
-  document.addEventListener('cryonexus:phase', event => { selectedPhase = event.detail.index; });
-  window.cinema = { boot, setAudio, getStats: () => ({ contexts: slots.length, running: instances.filter(i => i.running).length, scenes: instances.map(i => ({ id: i.canvas.id, running: i.running, frames: i.frames, failed: i.failed })) }) };
+  document.addEventListener('cryonexus:simulation', receiveSimulation);
+  document.addEventListener('cryonexus:phase', event => {
+    if (!hasSimulation && Number.isInteger(event.detail?.index)) {
+      selectedPhase = Math.max(0, Math.min(4, event.detail.index)); simulation.phase = selectedPhase;
+    }
+  });
+  window.cinema = { boot, setAudio, getStats: () => ({ contexts: slots.length, running: instances.filter(i => i.running).length, simulation, scenes: instances.map(i => ({ id: i.canvas.id, running: i.running, frames: i.frames, failed: i.failed, visual: i.refs.visual || null })) }) };
 })();

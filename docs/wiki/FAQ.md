@@ -42,9 +42,9 @@ Nein. Es gibt keine echte Wallet, Zahlung oder externe Marktquelle. Die Simulati
 
 SwiftShader berechnet Grafik auf der CPU. Seine Messwerte beweisen keine Leistung auf einem physischen GPU. Die Engine begrenzt Pixelzahl und passt die Auflösung an, aber 60 FPS sind erst auf konkreten Geräten zu bestätigen. Siehe [Qualität](Tests-und-Qualitaet.md).
 
-## Warum kann das Wiki noch nicht gepusht werden?
+## Warum scheitert der erste Wiki-Push?
 
-Das Wiki ist aktiviert, hat aber noch keine erste Seite. GitHub muss einmal über seine Wiki-Oberfläche das separate Repository erstellen. Alle fertigen Seiten sind bereits im [Handbuch](Home.md) lesbar; das [Importverfahren](Hosting-und-Wiki.md#github-wiki-veröffentlichen) synchronisiert sie danach.
+Wenn das Wiki aktiviert ist, aber noch keine erste Seite besitzt, fehlt sein separates Git-Repository. GitHub muss es einmal über seine Wiki-Oberfläche erstellen. Alle fertigen Seiten sind bereits im [Handbuch](Home.md) lesbar; das [Importverfahren](Hosting-und-Wiki.md#github-wiki-veröffentlichen) synchronisiert sie danach.
 
 ## Unter welcher Lizenz steht das Projekt?
 

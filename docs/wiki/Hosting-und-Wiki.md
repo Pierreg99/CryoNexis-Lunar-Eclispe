@@ -28,7 +28,7 @@ Relative Ressourcenpfade funktionieren auch unter einem Projektpfad. Nach der Ve
 
 ## GitHub-Wiki veröffentlichen
 
-Das Wiki ist in den Repository-Einstellungen aktiviert. GitHub erstellt sein separates Git-Repository erst nach einer ersten Wiki-Seite. Der aktuelle Abruf von `CryoNexis-Lunar-Eclispe.wiki.git` liefert deshalb „Repository not found“.
+Das Wiki ist in den Repository-Einstellungen aktiviert. GitHub erstellt sein separates Git-Repository erst nach einer ersten Wiki-Seite. Ein noch nicht initialisiertes `CryoNexis-Lunar-Eclispe.wiki.git` liefert beim Abruf „Repository not found“.
 
 1. Öffne [die erste Wiki-Seite](https://github.com/Pierreg99/CryoNexis-Lunar-Eclispe/wiki/_new), nenne sie **Home** und speichere sie einmal. Der Inhalt kann durch den folgenden Import ersetzt werden.
 2. Prüfe den vorbereiteten Export:

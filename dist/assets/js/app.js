@@ -188,7 +188,7 @@
       '<span class="node-head"><span>0' + (index + 1) + ' / <span class="node-binding"></span></span><span class="node-symbol" aria-hidden="true">' + node.symbol + '</span></span>' +
       '<span class="node-name">' + node.id + '</span><span class="node-sector">' + node.sector + '</span>' +
       '<span class="node-value"><span><span class="node-price"></span><small> CNX</small></span><small class="node-change"></small></span></button>' +
-      '<div id="' + detailId + '" class="node-details" aria-hidden="true"><div class="node-details-inner"><dl>' +
+      '<div id="' + detailId + '" class="node-details" aria-hidden="true" inert><div class="node-details-inner"><dl>' +
       '<div><dt>Sektor</dt><dd>' + node.sector + '</dd></div><div><dt>Liquidität</dt><dd class="node-liquidity"></dd></div>' +
       '<div><dt>Halbwertszeit</dt><dd class="node-half-life"></dd></div><div><dt>Validatoren</dt><dd class="node-validators"></dd></div>' +
       '<div><dt>Stärke</dt><dd class="node-strength"></dd></div><div><dt>Spread</dt><dd class="node-spread"></dd></div><div><dt>Simuliertes Risiko</dt><dd class="node-risk"></dd></div>' +
@@ -204,6 +204,7 @@
       trigger.setAttribute('aria-expanded', String(expanded));
       article.classList.toggle('open', expanded);
       article.querySelector('.node-details').setAttribute('aria-hidden', String(!expanded));
+      article.querySelector('.node-details').inert = !expanded;
       if (motion.matches && typeof document.getAnimations === 'function') document.getAnimations().forEach(function (animation) { animation.cancel(); });
     });
     const view = {

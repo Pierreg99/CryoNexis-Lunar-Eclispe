@@ -49,6 +49,21 @@ Die Audioanalyse verwendet einen `AnalyserNode` mit Bass-, Mitten- und Höhenban
 
 Für Diagnosezwecke stehen `cinema.getStats()`, `CryoScenes.built()` und `CryoScenes.failed()` in der Browserkonsole bereit. Erfolgreiche Builds senden `cryonexus:scene`; Phasenwechsel senden `cryonexus:phase`.
 
+## Modulgrenzen
+
+Die drei Laufzeitschichten sind getrennt und kommunizieren über kleine Schnittstellen. Klassische Skripte erhalten die direkte Offline-Nutzung; ES-Modulimporte und ein Bundler sind nicht erforderlich.
+
+| Modul | Verantwortung | Schnittstelle |
+| --- | --- | --- |
+| `index.html` | Semantische Sektionen, Navigation, Terminal und Phasen | Stabile DOM- und Canvas-IDs |
+| `main.css` | 20 nummerierte Blöcke, Tokens, Responsive Layout und reduzierte Bewegung | Klassen und CSS-Variablen |
+| `three.min.js` | Lokal eingebundene 3D-Bibliothek | `window.THREE` |
+| `cinema_engine.js` | Renderer-Pool, Post-FX, Sichtbarkeit und Audio | `cinema.boot()`, `setAudio()`, `getStats()` |
+| `scenes.js` | Sechs einmalig gebaute Szenen, gemeinsame GLSL-Chunks und Eis-Materialien | Boot-Callbacks und `cryonexus:scene` |
+| `app.js` | Ausschließlich DOM, Eingaben, HUD und Interaktionszustand | DOM-Ereignisse und `cryonexus:phase` |
+
+Szenen definieren statische `onBuild`- und animierte `onUpdate`-Callbacks. Die Engine besitzt ihre Renderer und die Frame-Schleifen. Die Oberfläche erzeugt keine Geometrie und enthält keine Shader. Der Szenenzähler hört auf Build-Ereignisse; Phasenwechsel erreichen die Engine als eigenes Ereignis.
+
 ## Prüfung
 
 Die Entwicklungstests sind vom auslieferbaren `dist/` getrennt. Hinweise und Ergebnisse stehen in [VERIFICATION.md](VERIFICATION.md). Das Rendering passt seine Auflösung bei anhaltend langen Frames nach unten an. 60 fps auf beliebiger schwacher Hardware sind keine überprüfbare Garantie; dafür sind Messungen auf konkreten Geräten erforderlich.

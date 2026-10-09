@@ -300,10 +300,20 @@ async function fullRun(browser, url, name, viewport) {
   for (const id of sectionIds) {
     await scrollTo(page, id);
     visits.push(await assertVisibility(page));
-    await page.waitForFunction(section => {
-      const element = document.querySelector(`#${section} .reveal`);
-      return element && Number(getComputedStyle(element).opacity) > 0;
-    }, id, { timeout: 10_000, polling: 100 });
+    try {
+      await page.waitForFunction(section => {
+        const element = document.querySelector(`#${section} .reveal`);
+        return element && Number(getComputedStyle(element).opacity) > 0;
+      }, id, { timeout: 10_000, polling: 100 });
+    } catch (error) {
+      const diagnostic = await page.evaluate(section => {
+        const element = document.querySelector(`#${section} .reveal`);
+        const rect = element.getBoundingClientRect();
+        return { section, scrollY, viewport: innerHeight, top: rect.top, bottom: rect.bottom,
+          height: rect.height, opacity: getComputedStyle(element).opacity, classes: element.className };
+      }, id);
+      throw new Error(`${error.message}\nReveal diagnostics: ${JSON.stringify(diagnostic)}`);
+    }
     if (process.env.CAPTURE_ALL_SECTIONS === '1') {
       await page.screenshot({ path: path.join(artifacts, `${name}-${id}.png`) });
     }

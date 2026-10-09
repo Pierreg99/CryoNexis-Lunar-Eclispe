@@ -106,6 +106,13 @@ async function open(browser, url, options = {}) {
     deviceScaleFactor: 1,
   });
   await context.addInitScript(instrument);
+  if (options.savedStorage !== undefined) await context.addInitScript(value => {
+    localStorage.setItem('cryonexus.simulation.v1', value);
+  }, options.savedStorage);
+  if (options.storageFailure) await context.addInitScript(() => {
+    Object.defineProperty(window, 'localStorage', { configurable: true,
+      get() { throw new DOMException('Storage disabled by the acceptance test', 'SecurityError'); } });
+  });
   if (options.freezeIntervals) await context.addInitScript(() => {
     window.setInterval = () => 0;
     window.clearInterval = () => {};
@@ -676,7 +683,7 @@ async function simulationRun(browser, url) {
   await page.waitForFunction(() => document.querySelectorAll('.node-trigger').length === 6, null, { polling: 50 });
   assert.deepEqual((await readSimulation(page)).raw, persistent, 'Reload must restore holdings, cash, Vault and history exactly');
   assert.equal(await page.locator('#simulation-pause').getAttribute('aria-pressed'), 'true');
-  assertNoAnimations(page, 'Manual simulation controls');
+  await assertNoAnimations(page, 'Manual simulation controls');
   assert.equal(await page.evaluate(() => __acceptance.rafRequests), 0);
   assert.equal(await page.evaluate(() => __acceptance.contexts.length), 0);
   console.log('PASS simulation ledger: trades, fees, invalid input, gate, yield, history and persistence');
@@ -725,6 +732,43 @@ async function simulationRun(browser, url) {
     visualBefore, visualAfter, environmentWarnings: run.environmentWarnings });
   await run.context.close();
   console.log('PASS simulation visuals: all six scenes apply shared decisions; reset requires explicit confirmation');
+  await storageRecovery(browser, url);
+}
+
+async function storageRecovery(browser, url) {
+  const corrupt = await open(browser, url, { reduced: true, savedStorage: '{malformed-json' });
+  const fresh = await readSimulation(corrupt.page);
+  assert.equal(fresh.state.cash, 100000);
+  assert.equal(fresh.state.tick, 0);
+  assert(fresh.state.nodes.every(node => !node.bound && node.quantity === 0));
+  await corrupt.page.locator('#simulation-message').scrollIntoViewIfNeeded();
+  assert(await corrupt.page.locator('#simulation-message').isVisible());
+  assert.match(await corrupt.page.locator('#simulation-message').innerText(), /beschädigt|ungültig/);
+  assert.equal(await corrupt.page.evaluate(() => __acceptance.contexts.length), 0);
+  await clean(corrupt);
+  report.runs.push({ name: 'simulation-storage-corrupt', mode: 'reduced', cash: fresh.state.cash,
+    recoveryMessage: await corrupt.page.locator('#simulation-message').innerText() });
+  await corrupt.context.close();
+  const blocked = await open(browser, url, { reduced: true, storageFailure: true });
+  assert.equal(await blocked.page.locator('#simulation-storage').innerText(), 'SITZUNG OHNE DAUERHAFTEN SPEICHER');
+  const node = await expandNode(blocked.page, 'CN-ALPHA-01');
+  const cashBefore = deNumber(await blocked.page.locator('#sim-cash').innerText());
+  await node.locator('.node-quantity').fill('1');
+  await node.locator('[data-action="buy"]').click();
+  const cashAfter = deNumber(await blocked.page.locator('#sim-cash').innerText());
+  assert(cashAfter < cashBefore, 'Trading must work without durable storage');
+  assert.equal(deNumber((await node.locator('.node-held').innerText()).split('/')[0]), 1);
+  await blocked.page.locator('#simulation-step').click();
+  assert.match(await blocked.page.locator('#sim-time').innerText(), /5 MIN/);
+  assert.match(await simulationCommand(blocked.page, 'portfolio'), /VERMÖGEN.*CN-ALPHA-01: 1/s);
+  await assertNoAnimations(blocked.page, 'Unavailable storage fallback');
+  assert.equal(await blocked.page.evaluate(() => __acceptance.rafRequests), 0);
+  assert.equal(await blocked.page.evaluate(() => __acceptance.contexts.length), 0);
+  await clean(blocked);
+  report.runs.push({ name: 'simulation-storage-unavailable', mode: 'reduced', cashBefore, cashAfter,
+    time: await blocked.page.locator('#sim-time').innerText() });
+  await blocked.context.close();
+  console.log('PASS storage fallback: corrupt JSON recovers visibly; unavailable storage preserves trading and manual time');
 }
 
 async function bootFailsafe(browser, url) {

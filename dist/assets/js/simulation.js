@@ -6,7 +6,8 @@
   'use strict';
 
   const VERSION = 1;
-  const MONEY_LIMIT = 1000000000000;
+  // Four-decimal monetary atoms stay below the safe integer limit at this cap.
+  const MONEY_LIMIT = 100000000000;
   const MAX_QUANTITY = 1000;
   const YEAR_MINUTES = 365 * 24 * 60;
   const BASE = [
@@ -40,6 +41,8 @@
   const precise = (value, decimals) => Math.abs(value - Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals)) <= Number.EPSILON * Math.max(1, Math.abs(value)) * 2;
   const display = value => new Intl.NumberFormat('de-DE', { maximumFractionDigits: 4 }).format(value);
   const failure = message => ({ ok: false, message: message });
+  const exactKeys = (object, keys) => object && typeof object === 'object' && !Array.isArray(object) &&
+    Object.keys(object).length === keys.length && keys.every(key => Object.prototype.hasOwnProperty.call(object, key));
 
   function initial(seed) {
     return {
@@ -52,26 +55,30 @@
   }
 
   function validSaved(saved) {
-    if (!saved || saved.version !== VERSION || !integer(saved.seed, 0, 4294967295) ||
+    if (!exactKeys(saved, ['version', 'seed', 'rng', 'phase', 'tick', 'cycle', 'paused', 'cash', 'coherence', 'feesPaid', 'historySeq', 'history', 'nodes', 'vault']) ||
+      saved.version !== VERSION || !integer(saved.seed, 0, 4294967295) ||
       !integer(saved.rng, 0, 4294967295) || !integer(saved.phase, 0, 4) || !integer(saved.tick, 0, 100000000) ||
       !integer(saved.cycle, 0, 1000000) || typeof saved.paused !== 'boolean' ||
-      !finite(saved.cash, 0, MONEY_LIMIT) || !precise(saved.cash, 4) || !finite(saved.coherence, 0, 100) ||
+      !finite(saved.cash, 0, MONEY_LIMIT) || !precise(saved.cash, 4) || !finite(saved.coherence, 0, 100) || !precise(saved.coherence, 4) ||
       !finite(saved.feesPaid, 0, MONEY_LIMIT) || !precise(saved.feesPaid, 4) ||
       !integer(saved.historySeq, 0, Number.MAX_SAFE_INTEGER) || !Array.isArray(saved.nodes) || saved.nodes.length !== 6 ||
-      !saved.vault || !finite(saved.vault.balance, 0, MONEY_LIMIT) || !precise(saved.vault.balance, 4) ||
+      !exactKeys(saved.vault, ['balance', 'earned']) || !finite(saved.vault.balance, 0, MONEY_LIMIT) || !precise(saved.vault.balance, 4) ||
       !finite(saved.vault.earned, 0, MONEY_LIMIT) || !precise(saved.vault.earned, 4) ||
       !Array.isArray(saved.history) || saved.history.length > 40) return false;
-    if (!saved.nodes.every((node, index) => node && node.id === BASE[index].id &&
+    if (!saved.nodes.every((node, index) => exactKeys(node, ['id', 'rawPrice', 'liquidityFactor', 'strength', 'quantity', 'bound', 'change']) && node.id === BASE[index].id &&
       finite(node.rawPrice, 0.0001, 1000000) && precise(node.rawPrice, 4) &&
-      finite(node.liquidityFactor, 0.35, 1.65) && finite(node.strength, 25, 100) &&
+      finite(node.liquidityFactor, 0.35, 1.65) && precise(node.liquidityFactor, 4) && finite(node.strength, 25, 100) && precise(node.strength, 4) &&
       finite(node.quantity, 0, 1000000000) && precise(node.quantity, 6) &&
-      typeof node.bound === 'boolean' && finite(node.change, -0.6, 0.6))) return false;
+      typeof node.bound === 'boolean' && finite(node.change, -0.6, 0.6) && precise(node.change, 4))) return false;
     let previous = 0;
+    let previousTick = 0;
+    const historyTypes = ['tick', 'step', 'phase', 'auto-phase', 'pause', 'resume', 'buy', 'sell', 'link', 'unlink', 'stabilize', 'deposit', 'withdraw'];
     if (!saved.history.every(entry => {
-      if (!entry || !integer(entry.id, previous + 1, saved.historySeq) || !integer(entry.tick, 0, saved.tick) ||
-        !integer(entry.phase, 0, 4) || typeof entry.type !== 'string' || !/^[a-z-]{1,20}$/.test(entry.type) ||
+      if (!exactKeys(entry, ['id', 'tick', 'type', 'text', 'phase']) || !integer(entry.id, previous + 1, saved.historySeq) || !integer(entry.tick, previousTick, saved.tick) ||
+        !integer(entry.phase, 0, 4) || !historyTypes.includes(entry.type) ||
         typeof entry.text !== 'string' || entry.text.length > 320) return false;
       previous = entry.id;
+      previousTick = entry.tick;
       return true;
     })) return false;
     const positions = saved.nodes.reduce((sum, node, index) => sum + money(node.quantity * money(node.rawPrice * PHASES[saved.phase].prices[index])), 0);
@@ -184,6 +191,7 @@
       if (!quantityValid(quantity)) return reject('Die Menge muss positiv, höchstens 1.000 CNX und auf sechs Nachkommastellen begrenzt sein.');
       const node = derived().nodes[index];
       const gross = money(node.price * quantity);
+      if (gross <= 0) return reject('Diese Menge liegt unter der vierstelligen Geldpräzision.');
       const impact = clamp(gross / node.liquidity * 0.035, 0, 0.025);
       const slippage = money(gross * (node.spread / 200 + impact));
       const fee = money(gross * (0.0012 + profile().flux * 0.0008));
@@ -203,6 +211,7 @@
       if (state.paused && options.force !== true) return failure('Die Simulation ist pausiert. Ein Einzelschritt bleibt möglich.');
       if (state.tick >= 100000000) return failure('Die maximale simulierte Laufzeit ist erreicht.');
       const before = derived();
+      const checkpoint = clone(state);
       const current = profile();
       state.nodes.forEach(function (node, index) {
         const oldRaw = node.rawPrice;
@@ -222,8 +231,9 @@
       state.coherence = money(clamp(state.coherence + (coherenceTarget - state.coherence) * 0.018 - current.flux * 0.025 + before.bound * 0.015, 0, 100));
       state.tick += 1;
       const vault = derived().vault;
+      if (derived().equity > MONEY_LIMIT) { state = checkpoint; return failure('Der Simulationsschritt würde die Vermögensgrenze überschreiten.'); }
       const interest = vault.open ? money(state.vault.balance * vault.apr / 100 * 5 / YEAR_MINUTES) : 0;
-      const credited = Math.min(interest, MONEY_LIMIT - state.vault.balance);
+      const credited = money(Math.max(0, Math.min(interest, MONEY_LIMIT - derived().equity)));
       state.vault.balance = money(state.vault.balance + credited);
       state.vault.earned = money(Math.min(MONEY_LIMIT, state.vault.earned + credited));
       const message = 'Simulationszeit +' + 5 + ' min · Phase ' + current.name + (credited ? ' · Vault-Zuwachs ' + display(credited) + ' CNX.' : '.');
@@ -238,6 +248,9 @@
       const manual = options.manual !== false;
       const cost = PHASES[index].cost;
       if (manual && state.coherence < cost) return failure('Zu wenig Kohärenz für den Phasenwechsel. Benötigt: ' + cost + ', verfügbar: ' + display(state.coherence) + '.');
+      const calibratedEquity = money(state.cash + state.vault.balance + state.nodes.reduce((sum, node, nodeIndex) =>
+        sum + money(node.quantity * money(node.rawPrice * PHASES[index].prices[nodeIndex])), 0));
+      if (calibratedEquity > MONEY_LIMIT) return failure('Diese Phasenkalibrierung würde die Vermögensgrenze überschreiten.');
       const previous = state.phase;
       if (manual) state.coherence = money(state.coherence - cost);
       state.phase = index;

@@ -168,6 +168,8 @@ test('corrupt saves fail cleanly; serialized and view snapshots cannot mutate th
     saved => { saved.coherence = Infinity; }, saved => { saved.nodes[0].quantity = 0.0000001; },
     saved => { saved.rng = '404'; }, saved => { saved.vault.balance = NaN; },
     saved => { saved.nodes[0].rawPrice = null; }, saved => { saved.paused = 0; },
+    saved => { saved.cash = 100000000001; }, saved => { saved.extra = true; },
+    saved => { saved.nodes[0].extra = true; }, saved => { saved.coherence = 99.00001; },
     saved => { saved.history = [{ id: 1, tick: 99, type: 'tick', text: 'bad', phase: 0 }]; }
   ];
   for (const mutate of mutations) {
@@ -185,6 +187,24 @@ test('corrupt saves fail cleanly; serialized and view snapshots cannot mutate th
   success(model.act('link', { id: ids[0] })); assert.deepEqual(calls, [100000, 98800]);
   unsubscribe(); success(model.tick()); assert.equal(calls.length, 2);
   invariant(model);
+});
+
+test('precision and wealth boundaries reject atomically and remain restorable', () => {
+  const tinySave = create().serialize(); tinySave.nodes[0].rawPrice = 0.0001;
+  const tiny = create({ saved: tinySave }); assert.equal(tiny.snapshot().restored, true);
+  unchanged(tiny, () => tiny.act('buy', { id: ids[0], quantity: 0.000001 }));
+  const richSave = create().serialize();
+  richSave.cash = 1; richSave.nodes[0].rawPrice = 1000000; richSave.nodes[0].quantity = 99999.999999;
+  const rich = create({ saved: richSave }); assert.equal(rich.snapshot().restored, true);
+  assert.equal(rich.snapshot().equity, 100000000000);
+  unchanged(rich, () => rich.selectPhase(2, { manual: false }));
+  for (let i = 0; i < 20; i++) {
+    const before = rich.serialize(); const result = rich.tick();
+    if (!result.ok) assert.deepEqual(rich.serialize(), before);
+    assert(rich.snapshot().equity <= 100000000000);
+    assert.equal(create({ saved: rich.serialize() }).snapshot().restored, true);
+    invariant(rich);
+  }
 });
 
 console.log('Simulation checks passed: ' + checks);

@@ -135,7 +135,7 @@
     const detailId = 'node-detail-' + index;
     article.innerHTML = '<button type="button" class="node-trigger" aria-expanded="false" aria-controls="' + detailId + '">' +
       '<span class="node-head"><span>0' + (index + 1) + ' / VERBUNDEN</span><span class="node-symbol" aria-hidden="true">' + node.symbol + '</span></span>' +
-      '<h3>' + node.id + '</h3><span class="node-sector">' + node.sector + '</span>' +
+      '<span class="node-name">' + node.id + '</span><span class="node-sector">' + node.sector + '</span>' +
       '<span class="node-value"><span><span class="node-price"></span><small> CNX</small></span><small class="node-change"></small></span></button>' +
       '<div id="' + detailId + '" class="node-details" aria-hidden="true"><div class="node-details-inner"><dl>' +
       '<div><dt>Sektor</dt><dd>' + node.sector + '</dd></div><div><dt>Liquidität</dt><dd class="node-liquidity"></dd></div>' +
@@ -335,7 +335,8 @@
   function frame(now) {
     frameId = 0;
     if (document.hidden || motion.matches) return;
-    const dt = lastFrame ? Math.min(now - lastFrame, 64) : 0;
+    // Use visible wall time so counters finish on schedule even during slow frames.
+    const dt = lastFrame ? now - lastFrame : 0;
     lastFrame = now;
     frameCount += 1;
     if (now - fpsStart >= 1000) {

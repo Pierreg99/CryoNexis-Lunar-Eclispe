@@ -5,7 +5,7 @@ Geprüft am 9. Oktober 2026 mit Chromium 151.0.7922.173 in der verwalteten Linux
 | Prüfung | Ergebnis |
 | --- | --- |
 | Vollständige lokale Auslieferung | 8 Laufzeitdateien, insgesamt 739.689 Bytes; unter 1,2 MB |
-| Projektstruktur | 16 versionierte Projektdateien; vier getrennte Schichten: Modell, Oberfläche, Szenen, Engine |
+| Projektstruktur | 31 versionierte Projektdateien einschließlich README, Wiki und Veröffentlichungsskript; vier getrennte Schichten: Modell, Oberfläche, Szenen, Engine |
 | Skriptreihenfolge und CSS-Struktur | Three.js → Cinema → Szenen → Simulation → App; 20 nummerierte CSS-Blöcke |
 | Desktop und Mobilgerät | Alle sechs Sektionen und Interaktionen geprüft; kein horizontaler Überlauf |
 | Lazy-Build und WebGL-Limit | Jede Szene genau einmal gebaut; maximal zwei tatsächliche WebGL-Kontexte |
@@ -28,6 +28,12 @@ Geprüft am 9. Oktober 2026 mit Chromium 151.0.7922.173 in der verwalteten Linux
 | Laufzeit-Netzwerk und Konsole | Keine externen Requests, fehlgeschlagenen Assets, Anwendungsfehler oder Anwendungswarnungen |
 
 Die exakten Geometriezahlen und prozeduralen Shader bleiben erhalten. Zustandsänderungen verwenden vorhandene Materialien, Geometrien und Instanzdaten; sie erzeugen keine zusätzlichen Renderer. Die neue Oberfläche wurde zusätzlich am Desktop mit und ohne Animation visuell inspiziert.
+
+## Dokumentationsprüfung
+
+Die README wurde mit GitHubs Markdown-Renderer geprüft. 13 Wiki-Markdown-Dateien einschließlich Sidebar und Footer wurden lokal exportiert; 100 relative Links und Seitenanker wurden auf vorhandene Ziele geprüft. Das Schnellstart-Beispiel wurde gegen das Modell ausgeführt: Kohärenz 69, Stabilität 77,4333, Vault-Zins 19,164 %. Titelbild und README wurden in heller, dunkler und mobiler Vorschau geprüft.
+
+Das Veröffentlichungsskript meldet die noch fehlende Wiki-Initialisierung ausdrücklich. Das Wiki ist aktiviert, besitzt aber noch kein separates Git-Repository; die erste Home-Seite muss über GitHub angelegt werden. Alle Wiki-Quellen sind bereits im Projekt verfügbar. Diese Dokumentationsänderungen betreffen keine Datei in `dist/`; die oben dokumentierte Laufzeitprüfung bleibt unverändert.
 
 ## Verbleibende Nachweise
 

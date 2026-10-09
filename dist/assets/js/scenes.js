@@ -144,7 +144,7 @@
   // Keep observing after construction: engine's separate observer owns pause/resume.
   const lazy = new IntersectionObserver(entries => { entries.forEach(entry => { if (entry.isIntersecting) build(entry.target.querySelector('canvas')); }); }, { rootMargin: '250px 0px', threshold: 0 });
   Object.keys(factories).forEach(id => lazy.observe(document.getElementById(id).closest('section')));
-  function firstViewport() { Object.keys(factories).forEach(id => { const canvas = document.getElementById(id), rect = canvas.closest('section').getBoundingClientRect(); if (rect.bottom > 0 && rect.top < innerHeight + 250) build(canvas); }); }
+  function firstViewport() { Object.keys(factories).forEach(id => { const canvas = document.getElementById(id), rect = canvas.closest('section').getBoundingClientRect(); if (rect.bottom > -250 && rect.top < innerHeight + 250) build(canvas); }); }
   firstViewport(); motion.addEventListener('change', () => { if (!motion.matches) firstViewport(); });
   window.CryoScenes = { built: () => Array.from(built), failed: () => Array.from(failed) };
 })();

@@ -29,12 +29,12 @@ async function staticAcceptance() {
     .reduce((sum, stat) => sum + stat.size, 0);
   assert(report.payloadBytes < 1_200_000, `Payload ${report.payloadBytes} exceeds 1.2 MB`);
   const expected = ['index.html', 'assets/css/main.css', 'assets/js/scenes.js',
-    'assets/js/app.js', 'assets/vendor/three.min.js', 'assets/vendor/cinema_engine.js'];
+    'assets/js/simulation.js', 'assets/js/app.js', 'assets/vendor/three.min.js', 'assets/vendor/cinema_engine.js'];
   await Promise.all(expected.map(file => fs.access(path.join(dist, file))));
   const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
   const scripts = Array.from(html.matchAll(/<script\s+src="([^"]+)"/g), match => match[1]);
   assert.deepEqual(scripts, ['assets/vendor/three.min.js', 'assets/vendor/cinema_engine.js',
-    'assets/js/scenes.js', 'assets/js/app.js']);
+    'assets/js/scenes.js', 'assets/js/simulation.js', 'assets/js/app.js']);
   assert.match(html, /<html lang="de"/);
   const css = await fs.readFile(path.join(dist, 'assets/css/main.css'), 'utf8');
   assert.deepEqual(Array.from(css.matchAll(/\/\*\s*(\d{2})\s*[—-]/g), match => Number(match[1])),
@@ -492,6 +492,241 @@ async function reducedRun(browser, url, name) {
   console.log(`PASS ${name}: reduced motion zero RAF, animations and WebGL contexts; controls remain usable`);
 }
 
+async function readSimulation(page) {
+  return page.evaluate(() => {
+    const raw = JSON.parse(localStorage.getItem('cryonexus.simulation.v1'));
+    if (!raw) throw new Error('The application did not persist its simulation state');
+    // Read a derived view from a separate instance; every mutation below uses the UI.
+    return { raw, state: CryoSimulation.create({ saved: raw }).snapshot() };
+  });
+}
+
+function deNumber(text) {
+  return Number(text.trim().replace(/\./g, '').replace(',', '.').replace(/−/g, '-').replace(/[^\d.+-]/g, ''));
+}
+
+function near(actual, expected, label, tolerance = .0002) {
+  assert(Math.abs(actual - expected) <= tolerance, `${label}: expected ${expected}, received ${actual}`);
+}
+
+async function simulationCommand(page, command) {
+  const output = page.locator('#terminal-output');
+  const count = await output.locator('p').count();
+  await page.locator('#terminal-input').fill(command);
+  await page.locator('#terminal-input').press('Enter');
+  assert.equal(await page.locator('#terminal-input').inputValue(), '');
+  return (await output.locator('p').allTextContents()).slice(count).join('\n');
+}
+
+async function expandNode(page, id) {
+  const node = page.locator(`[data-node="${id}"]`);
+  if (await node.locator('.node-trigger').getAttribute('aria-expanded') !== 'true') {
+    await node.locator('.node-trigger').click();
+  }
+  await node.locator('.node-details').waitFor({ state: 'visible' });
+  return node;
+}
+
+async function captureAppliedVisuals(page) {
+  const visuals = {};
+  for (let index = 0; index < sectionIds.length; index++) {
+    const id = sceneIds[index];
+    const before = await page.evaluate(sceneId => cinema.getStats().scenes.find(scene => scene.id === sceneId)?.frames || 0, id);
+    await scrollTo(page, sectionIds[index]);
+    await page.waitForFunction(expected => {
+      const scene = cinema.getStats().scenes.find(item => item.id === expected.id);
+      return scene && scene.running && scene.frames > expected.before && scene.visual && Object.keys(scene.visual).length > 0;
+    }, { id, before }, { timeout: 20_000, polling: 100 });
+    await assertVisibility(page);
+    visuals[id] = await page.evaluate(sceneId => cinema.getStats().scenes.find(scene => scene.id === sceneId).visual, id);
+  }
+  return visuals;
+}
+
+async function simulationRun(browser, url) {
+  const run = await open(browser, url, { reduced: true, viewport: { width: 960, height: 700 } });
+  const { page } = run;
+  let current = await readSimulation(page);
+  assert.equal(current.state.cash, 100000);
+  assert.equal(current.state.tick, 0);
+  assert.equal(await page.locator('#vault-state').innerText(), 'GESPERRT');
+  assert(await page.locator('#vault-deposit').isDisabled());
+  assert(await page.locator('#vault-withdraw').isDisabled());
+  await page.locator('#simulation-pause').click();
+  assert.equal((await readSimulation(page)).state.paused, true);
+  assert.equal(await page.locator('#simulation-pause').getAttribute('aria-pressed'), 'true');
+
+  const alpha = await expandNode(page, 'CN-ALPHA-01');
+  await alpha.locator('.node-quantity').fill('2');
+  const quote = await alpha.locator('.node-quote').innerText();
+  const quotedTotal = deNumber(quote.match(/Kauf:\s*([\d.,]+)/)[1]);
+  const quotedFee = deNumber(quote.match(/Gebühr\s*([\d.,]+)/)[1]);
+  const beforeBuy = (await readSimulation(page)).state;
+  await alpha.locator('[data-action="buy"]').click();
+  const afterBuy = (await readSimulation(page)).state;
+  assert.equal(afterBuy.nodes[0].quantity, 2);
+  near(beforeBuy.cash - afterBuy.cash, quotedTotal, 'Executed buy matches the displayed total', .011);
+  near(afterBuy.feesPaid - beforeBuy.feesPaid, quotedFee, 'Executed buy charges the displayed fee');
+  assert(afterBuy.cash < beforeBuy.cash && afterBuy.feesPaid > beforeBuy.feesPaid);
+  near(deNumber((await alpha.locator('.node-held').innerText()).split('/')[0]), 2, 'Visible holdings reflect the purchase');
+  near(deNumber(await page.locator('#sim-cash').innerText()), afterBuy.cash, 'Visible cash reflects the purchase', .011);
+  near(deNumber(await page.locator('#sim-equity').innerText()), afterBuy.equity, 'Equity includes the purchased position', .011);
+
+  const beforeInvalidQuantity = (await readSimulation(page)).raw;
+  await alpha.locator('.node-quantity').fill('-1');
+  assert(await alpha.locator('[data-action="buy"]').isDisabled());
+  assert(await alpha.locator('[data-action="sell"]').isDisabled());
+  assert.match(await alpha.locator('.node-quote').innerText(), /positiv|Menge/i);
+  assert.deepEqual((await readSimulation(page)).raw, beforeInvalidQuantity);
+  await alpha.locator('.node-quantity').fill('0,5');
+  const beforeSell = (await readSimulation(page)).state;
+  await alpha.locator('[data-action="sell"]').click();
+  current = await readSimulation(page);
+  assert.equal(current.state.nodes[0].quantity, 1.5);
+  assert(current.state.cash > beforeSell.cash && current.state.feesPaid > beforeSell.feesPaid);
+  assert.match(await simulationCommand(page, 'buy CN-BOREALIS 1,25'), /gekauft/);
+  assert.match(await simulationCommand(page, 'sell CN-BOREALIS 0,25'), /verkauft/);
+  assert.equal((await readSimulation(page)).state.nodes[1].quantity, 1);
+
+  for (const id of ['CN-ALPHA-01', 'CN-BOREALIS', 'CN-KRYO-7X']) {
+    const node = await expandNode(page, id), before = (await readSimulation(page)).state;
+    await node.locator('[data-action="link"]').click();
+    const after = (await readSimulation(page)).state;
+    near(before.cash - after.cash, 1200, 'Binding charges its stated cost');
+    assert(after.nodes.find(item => item.id === id).bound);
+    assert(await node.evaluate(element => element.classList.contains('bound')));
+  }
+  const beforePhase = (await readSimulation(page)).state;
+  await page.locator('[data-phase="2"]').click();
+  current = await readSimulation(page);
+  assert.equal(current.state.phase, 2);
+  near(beforePhase.coherence - current.state.coherence, 18, 'Manual Korona consumes coherence');
+  assert.notEqual(current.state.nodes[2].price, beforePhase.nodes[2].price, 'Phase changes the market calibration');
+  assert.notEqual(current.state.nodes[2].spread, beforePhase.nodes[2].spread, 'Phase changes market risk and spread');
+  assert(current.state.vault.open, 'Three bound nodes and the Korona thresholds must open the gate');
+  assert.equal(await page.locator('#vault-conditions li[data-met="true"]').count(), 4);
+  assert.equal(await page.locator('#vault-state').innerText(), 'ZEITFENSTER OFFEN');
+  await page.locator('#vault-amount').fill('1000');
+  const beforeDeposit = current.state;
+  await page.locator('#vault-deposit').click();
+  current = await readSimulation(page);
+  near(current.state.vault.balance, 1000, 'Deposit moves funds into the Vault');
+  near(beforeDeposit.cash - current.state.cash, 1000, 'Deposit removes funds from free cash');
+  near(current.state.equity, beforeDeposit.equity, 'Deposit preserves total equity');
+  const beforeStep = current.state;
+  await page.locator('#simulation-step').click();
+  current = await readSimulation(page);
+  assert(current.state.paused && current.state.tick === beforeStep.tick + 1);
+  assert.equal(current.state.minutes - beforeStep.minutes, 5);
+  assert(current.state.vault.balance > beforeStep.vault.balance && current.state.vault.earned > 0,
+    'A forced step credits yield in the open Vault while paused');
+  assert(current.state.nodes.some((node, index) => node.price !== beforeStep.nodes[index].price));
+  current.state.nodes.forEach((node, index) => assert(Math.abs(node.price / beforeStep.nodes[index].price - 1) <= .00601));
+  assert.match(await page.locator('#sim-time').innerText(), /5 MIN.*PAUSIERT/);
+  assert(deNumber((await page.locator('#vault-earned').innerText()).replace(' CNX', '')) > 0);
+  assert.match(await simulationCommand(page, 'resume'), /fortgesetzt/);
+  const reducedTick = (await readSimulation(page)).state.tick;
+  await page.waitForTimeout(2400);
+  assert.equal((await readSimulation(page)).state.tick, reducedTick, 'Reduced motion must not advance the market automatically');
+  assert.match(await simulationCommand(page, 'pause'), /pausiert/);
+  assert.match(await simulationCommand(page, 'step'), /Simulationszeit/);
+  assert.equal((await readSimulation(page)).state.tick, reducedTick + 1);
+
+  const kryo = await expandNode(page, 'CN-KRYO-7X');
+  const beforeClosed = (await readSimulation(page)).state;
+  await kryo.locator('[data-action="unlink"]').click();
+  current = await readSimulation(page);
+  assert(!current.state.vault.open);
+  near(current.state.vault.balance, beforeClosed.vault.balance, 'Closing a gate preserves its funds');
+  assert(await page.locator('#vault-withdraw').isDisabled());
+  const closedRaw = current.raw;
+  assert.match(await simulationCommand(page, 'withdraw 100'), /geschlossen/);
+  assert.deepEqual((await readSimulation(page)).raw, closedRaw, 'Closed-gate withdrawal must be atomic');
+  assert.match(await simulationCommand(page, 'step'), /Simulationszeit/);
+  current = await readSimulation(page);
+  near(current.state.vault.balance, beforeClosed.vault.balance, 'Closed Vault earns no yield');
+  near(current.state.vault.earned, beforeClosed.vault.earned, 'Closed Vault preserves earned yield');
+  assert.match(await simulationCommand(page, 'link CN-KRYO-7X'), /gebunden/);
+  assert((await readSimulation(page)).state.vault.open, 'Rebinding restores the missing gate condition');
+  await page.locator('#vault-amount').fill('250');
+  const beforeWithdrawal = (await readSimulation(page)).state;
+  await page.locator('#vault-withdraw').click();
+  current = await readSimulation(page);
+  near(current.state.vault.balance, beforeWithdrawal.vault.balance - 250, 'Withdrawal debits the Vault');
+  near(current.state.cash, beforeWithdrawal.cash + 250, 'Withdrawal restores free cash');
+  for (const command of ['buy CN-ALPHA-01 -1', 'sell CN-ALPHA-01 999', 'buy UNKNOWN 1', 'deposit Infinity', 'withdraw 999999', 'phase 9']) {
+    const before = (await readSimulation(page)).raw;
+    await simulationCommand(page, command);
+    assert.deepEqual((await readSimulation(page)).raw, before, `${command} must not mutate valid state`);
+    assert(await page.locator('#terminal-output .terminal-error').count() > 0);
+  }
+  const umbra = await expandNode(page, 'CN-UMBRA'), beforeStabilize = (await readSimulation(page)).state;
+  await umbra.locator('[data-action="stabilize"]').click();
+  current = await readSimulation(page);
+  assert(current.state.nodes[4].strength > beforeStabilize.nodes[4].strength);
+  assert(current.state.coherence > beforeStabilize.coherence && current.state.stability > beforeStabilize.stability);
+  near(beforeStabilize.cash - current.state.cash, 700, 'Stabilization charges its stated cost');
+  const historyItems = await page.locator('#simulation-history li').allTextContents();
+  assert.equal(historyItems.length, Math.min(20, current.state.history.length));
+  assert.match(historyItems[0], /T\+15 MIN.*stabilisiert/);
+  assert.match(await simulationCommand(page, 'portfolio'), /VERMÖGEN.*Positionen.*Vault/s);
+  assert.match(await simulationCommand(page, 'history'), /T\+15 MIN.*stabilisiert/s);
+  const persistent = (await readSimulation(page)).raw;
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => document.querySelectorAll('.node-trigger').length === 6, null, { polling: 50 });
+  assert.deepEqual((await readSimulation(page)).raw, persistent, 'Reload must restore holdings, cash, Vault and history exactly');
+  assert.equal(await page.locator('#simulation-pause').getAttribute('aria-pressed'), 'true');
+  assertNoAnimations(page, 'Manual simulation controls');
+  assert.equal(await page.evaluate(() => __acceptance.rafRequests), 0);
+  assert.equal(await page.evaluate(() => __acceptance.contexts.length), 0);
+  console.log('PASS simulation ledger: trades, fees, invalid input, gate, yield, history and persistence');
+
+  // Animation is enabled only for two applied-visual snapshots; model time stays paused.
+  await page.setViewportSize({ width: 640, height: 650 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const visualBefore = await captureAppliedVisuals(page);
+  assert.equal(visualBefore['cn-eclipse'].phase, 2);
+  assert.equal(visualBefore['cn-nexus'].boundCount, 3);
+  assert(visualBefore['cn-crystal'].holdings[0] > 0);
+  assert(visualBefore['cn-vault'].vaultOpen && visualBefore['cn-vault'].gridSeparation > 0);
+  await simulationCommand(page, 'unlink CN-KRYO-7X');
+  await simulationCommand(page, 'phase 1');
+  await simulationCommand(page, 'sell CN-ALPHA-01 1,5');
+  await simulationCommand(page, 'step');
+  const visualAfter = await captureAppliedVisuals(page);
+  assert(visualAfter['cn-chamber'].coherence < visualBefore['cn-chamber'].coherence);
+  assert.notEqual(visualAfter['cn-chamber'].frost, visualBefore['cn-chamber'].frost);
+  assert.equal(visualAfter['cn-eclipse'].phase, 0);
+  assert.notEqual(visualAfter['cn-eclipse'].moonOffset, visualBefore['cn-eclipse'].moonOffset);
+  assert(visualAfter['cn-eclipse'].coronaExposure < visualBefore['cn-eclipse'].coronaExposure);
+  assert.equal(visualAfter['cn-nexus'].boundCount, 2);
+  assert(visualAfter['cn-nexus'].connection < visualBefore['cn-nexus'].connection);
+  assert.equal(visualAfter['cn-crystal'].holdings[0], 0);
+  assert(visualAfter['cn-crystal'].strengths[3] < visualBefore['cn-crystal'].strengths[3]);
+  assert(!visualAfter['cn-vault'].vaultOpen && visualAfter['cn-vault'].gridSeparation === 0);
+  assert(visualAfter['cn-void'].echoes > visualBefore['cn-void'].echoes && visualAfter['cn-void'].echoScale > visualBefore['cn-void'].echoScale);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.waitForFunction(() => cinema.getStats().running === 0, null, { timeout: 10_000, polling: 100 });
+  const beforeReset = (await readSimulation(page)).raw;
+  await simulationCommand(page, 'reset');
+  assert.deepEqual((await readSimulation(page)).raw, beforeReset, 'An unconfirmed CLI reset must preserve progress');
+  await page.locator('#simulation-reset').click();
+  assert.deepEqual((await readSimulation(page)).raw, beforeReset, 'The first reset click must only arm confirmation');
+  assert.match(await page.locator('#simulation-reset').innerText(), /bestätigen/);
+  await page.locator('#simulation-reset').click();
+  const reset = (await readSimulation(page)).state;
+  assert.equal(reset.cash, 100000); assert.equal(reset.tick, 0); assert.equal(reset.phase, 0);
+  assert.equal(reset.feesPaid, 0); assert.equal(reset.vault.balance, 0); assert.equal(reset.history.length, 0);
+  assert(reset.nodes.every(node => node.quantity === 0 && !node.bound));
+  assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  await assertNoAnimations(page, 'Simulation reset in reduced motion');
+  await clean(run);
+  report.runs.push({ name: 'simulation', mode: 'causal', persistent, reset,
+    visualBefore, visualAfter, environmentWarnings: run.environmentWarnings });
+  await run.context.close();
+  console.log('PASS simulation visuals: all six scenes apply shared decisions; reset requires explicit confirmation');
+}
+
 async function bootFailsafe(browser, url) {
   const run = await open(browser, url, { freezeIntervals: true });
   const timer = await run.page.evaluate(() => __acceptance.bootTimer);
@@ -506,8 +741,8 @@ async function bootFailsafe(browser, url) {
 }
 
 async function main() {
-  assert(Array.from(suites).every(suite => ['all', 'desktop', 'mobile', 'reduced', 'recovery', 'boot'].includes(suite)),
-    'Unknown ACCEPTANCE_SUITE; use all, desktop, mobile, reduced, recovery or boot');
+  assert(Array.from(suites).every(suite => ['all', 'desktop', 'mobile', 'reduced', 'simulation', 'recovery', 'boot'].includes(suite)),
+    'Unknown ACCEPTANCE_SUITE; use all, desktop, mobile, reduced, simulation, recovery or boot');
   report.suites = Array.from(suites);
   await fs.mkdir(artifacts, { recursive: true });
   await staticAcceptance();
@@ -558,6 +793,7 @@ async function main() {
       await reducedRun(browser, local, 'http-mobile');
     }
     if (enabled('recovery')) await contextRecovery(browser, local);
+    if (enabled('simulation')) await simulationRun(browser, local);
     if (enabled('boot')) await bootFailsafe(browser, local);
     console.log(`PASS payload ${report.payloadBytes} bytes; Chromium ${report.browser}; ${report.runs.length} browser runs; ${report.blocked.length} policy-blocked runs`);
     if (!fileAllowed && process.env.REQUIRE_FILE_TEST === '1') throw new Error('Required file:// browser validation was blocked by administrator policy');

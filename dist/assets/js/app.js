@@ -24,6 +24,23 @@
   const audioButton = document.getElementById('audio-toggle');
   const audioLabel = document.getElementById('audio-label');
   const number = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const precise = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 6 });
+  const interest = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+  const storageKey = 'cryonexus.simulation.v1';
+  let saved;
+  let storageCorrupt = false;
+  let storageAvailable = true;
+  try {
+    const stored = window.localStorage.getItem(storageKey);
+    if (stored) { try { saved = JSON.parse(stored); } catch (_) { storageCorrupt = true; } }
+  } catch (_) { storageAvailable = false; }
+  const simulation = window.CryoSimulation.create({ seed: 404, saved: saved });
+  let state = simulation.snapshot();
+  const nodeViews = new Map();
+  let phaseJob;
+  let traceKey = null;
+  let resetArmed = false;
+  let resetTimer = 0;
   let phaseIndex = 0;
   let frameId = 0;
   let lastFrame = 0;
@@ -42,14 +59,6 @@
     { name: 'Korona', time: 'T+01:18', description: 'Totalität. Die Korona leuchtet am Rand des Schattens.' },
     { name: 'Freisteller', time: 'T+01:52', description: 'Das Licht kehrt zurück. Der Schatten gibt den Himmel frei.' },
     { name: 'Reset', time: 'T+02:30', description: 'Der Kreis schließt sich. Die Kammer wartet auf den nächsten Kontakt.' }
-  ];
-  const nodes = [
-    { id: 'CN-ALPHA-01', sector: 'Eis-Storage', price: 1842.60, liquidity: 1840000, halfLife: '128 h', validators: 64, strength: 84, symbol: '◇' },
-    { id: 'CN-BOREALIS', sector: 'Cryo-Mining', price: 927.34, liquidity: 2630000, halfLife: '96 h', validators: 128, strength: 92, symbol: '⌘' },
-    { id: 'CN-LUNAR-09', sector: 'Corona-Handel', price: 3120.09, liquidity: 4170000, halfLife: '42 h', validators: 92, strength: 78, symbol: '◉' },
-    { id: 'CN-KRYO-7X', sector: 'Strahlungsschild', price: 748.72, liquidity: 1120000, halfLife: '256 h', validators: 48, strength: 96, symbol: '⬡' },
-    { id: 'CN-UMBRA', sector: 'Schattenmarkt', price: 2064.18, liquidity: 3260000, halfLife: '64 h', validators: 76, strength: 68, symbol: '◈' },
-    { id: 'CN-HALO', sector: 'Lichtarbitrage', price: 1296.46, liquidity: 2080000, halfLife: '32 h', validators: 104, strength: 88, symbol: '◎' }
   ];
 
   function stopJob(job) {
@@ -120,28 +129,73 @@
   const bootJob = recurring(calibrate, 480, true);
   if (motion.matches) finishBoot();
 
+  function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
+  }
+  function numeric(raw) {
+    const value = String(raw).trim().replace(',', '.');
+    return /^\d+(?:\.\d+)?$/.test(value) ? Number(value) : NaN;
+  }
+  function announce(result) {
+    const element = document.getElementById('simulation-message');
+    if (element) { element.textContent = result.message; element.dataset.error = String(!result.ok); }
+    // Manual changes remain animation-free when accessibility preferences require it.
+    if (motion.matches && typeof document.getAnimations === 'function') {
+      document.getAnimations().forEach(function (animation) { animation.cancel(); });
+    }
+    return result;
+  }
+  function action(type, payload) { return announce(simulation.act(type, payload)); }
+  function updateQuote(node, view) {
+    const quantity = numeric(view.quantity.value);
+    const buy = simulation.quote('buy', node.id, quantity);
+    const sell = simulation.quote('sell', node.id, quantity);
+    view.quote.textContent = buy.ok ? 'Kauf: ' + number.format(buy.total) + ' CNX · Gebühr ' + interest.format(buy.fee) + ' · Slippage ' + interest.format(buy.slippage) + '. Verkauf: ' + (sell.ok ? number.format(sell.net) + ' CNX' : sell.message) : buy.message;
+    view.buy.disabled = !buy.ok || buy.total > state.cash;
+    view.sell.disabled = !sell.ok || quantity > node.quantity;
+  }
   function renderNode(node) {
-    node.priceElement.textContent = number.format(node.price);
-    node.liquidityElement.textContent = number.format(node.liquidity / 1000000) + ' Mio. CNX';
-    node.changeElement.textContent = (node.change >= 0 ? '+' : '−') + number.format(Math.abs(node.change)) + ' %';
-    node.changeElement.style.color = node.change >= 0 ? 'var(--ice)' : 'var(--corona)';
-    node.meter.style.setProperty('--value', node.strength.toFixed(2) + '%');
+    const view = nodeViews.get(node.id);
+    if (!view) return;
+    view.price.textContent = number.format(node.price);
+    view.liquidity.textContent = number.format(node.liquidity / 1000000) + ' Mio. CNX';
+    view.change.textContent = (node.change >= 0 ? '+' : '−') + number.format(Math.abs(node.change)) + ' %';
+    view.change.style.color = node.change >= 0 ? 'var(--ice)' : 'var(--corona)';
+    view.meter.style.setProperty('--value', node.strength.toFixed(2) + '%');
+    view.held.textContent = precise.format(node.quantity) + ' / ' + number.format(node.positionValue) + ' CNX';
+    view.strength.textContent = number.format(node.strength) + ' %';
+    view.spread.textContent = number.format(node.spread) + ' %';
+    view.halfLife.textContent = precise.format(node.halfLife) + ' h';
+    view.validators.textContent = String(node.validators);
+    view.binding.textContent = node.bound ? 'ZEITLICH GEBUNDEN' : 'VERFÜGBAR';
+    view.article.classList.toggle('bound', node.bound);
+    view.link.textContent = node.bound ? 'Lösen (+400 CNX)' : 'Binden (1.200 CNX)';
+    view.link.dataset.action = node.bound ? 'unlink' : 'link';
+    view.link.setAttribute('aria-label', view.link.textContent + ' · ' + node.id);
+    updateQuote(node, view);
   }
   const nodeGrid = document.getElementById('node-grid');
-  if (nodeGrid) nodes.forEach(function (node, index) {
+  if (nodeGrid) state.nodes.forEach(function (node, index) {
     const article = document.createElement('article');
     article.className = 'node panel reveal reveal-d' + (index % 4 + 1);
+    article.dataset.node = node.id;
     article.setAttribute('data-tilt', '');
     const detailId = 'node-detail-' + index;
+    const quantityId = 'node-quantity-' + index;
     article.innerHTML = '<button type="button" class="node-trigger" aria-expanded="false" aria-controls="' + detailId + '">' +
-      '<span class="node-head"><span>0' + (index + 1) + ' / VERBUNDEN</span><span class="node-symbol" aria-hidden="true">' + node.symbol + '</span></span>' +
+      '<span class="node-head"><span>0' + (index + 1) + ' / <span class="node-binding"></span></span><span class="node-symbol" aria-hidden="true">' + node.symbol + '</span></span>' +
       '<span class="node-name">' + node.id + '</span><span class="node-sector">' + node.sector + '</span>' +
       '<span class="node-value"><span><span class="node-price"></span><small> CNX</small></span><small class="node-change"></small></span></button>' +
       '<div id="' + detailId + '" class="node-details" aria-hidden="true"><div class="node-details-inner"><dl>' +
       '<div><dt>Sektor</dt><dd>' + node.sector + '</dd></div><div><dt>Liquidität</dt><dd class="node-liquidity"></dd></div>' +
-      '<div><dt>Halbwertszeit</dt><dd>' + node.halfLife + '</dd></div><div><dt>Validatoren</dt><dd>' + node.validators + '</dd></div>' +
-      '</dl><div class="meter" aria-hidden="true"><i></i></div></div></div>';
-    // A native button provides Enter and Space behavior without duplicate key handlers.
+      '<div><dt>Halbwertszeit</dt><dd class="node-half-life"></dd></div><div><dt>Validatoren</dt><dd class="node-validators"></dd></div>' +
+      '<div><dt>Stärke</dt><dd class="node-strength"></dd></div><div><dt>Spread</dt><dd class="node-spread"></dd></div>' +
+      '<div><dt>Bestand / Wert</dt><dd class="node-held"></dd></div></dl><div class="meter" aria-hidden="true"><i></i></div>' +
+      '<div class="node-actions"><label class="control-label" for="' + quantityId + '">Menge für ' + node.id + '</label>' +
+      '<input class="simulation-input node-quantity" id="' + quantityId + '" value="1" inputmode="decimal" maxlength="16">' +
+      '<p class="node-quote"></p><div class="simulation-controls"><button type="button" data-action="buy">Kaufen</button><button type="button" data-action="sell">Verkaufen</button></div>' +
+      '<div class="simulation-controls"><button type="button" class="node-link" data-action="link"></button><button type="button" data-action="stabilize">Stabilisieren (700 CNX)</button></div></div></div></div>';
     const trigger = article.querySelector('.node-trigger');
     trigger.setAttribute('aria-label', node.id + ' · ' + node.sector + ' · Details');
     trigger.addEventListener('click', function () {
@@ -149,26 +203,85 @@
       trigger.setAttribute('aria-expanded', String(expanded));
       article.classList.toggle('open', expanded);
       article.querySelector('.node-details').setAttribute('aria-hidden', String(!expanded));
+      if (motion.matches && typeof document.getAnimations === 'function') document.getAnimations().forEach(function (animation) { animation.cancel(); });
     });
-    node.priceElement = article.querySelector('.node-price');
-    node.changeElement = article.querySelector('.node-change');
-    node.liquidityElement = article.querySelector('.node-liquidity');
-    node.meter = article.querySelector('.meter i');
-    node.change = 0;
+    const view = {
+      article: article, price: article.querySelector('.node-price'), change: article.querySelector('.node-change'),
+      liquidity: article.querySelector('.node-liquidity'), meter: article.querySelector('.meter i'),
+      halfLife: article.querySelector('.node-half-life'), validators: article.querySelector('.node-validators'),
+      held: article.querySelector('.node-held'), strength: article.querySelector('.node-strength'), spread: article.querySelector('.node-spread'),
+      binding: article.querySelector('.node-binding'), link: article.querySelector('.node-link'), quantity: article.querySelector('.node-quantity'),
+      quote: article.querySelector('.node-quote'), buy: article.querySelector('[data-action="buy"]'), sell: article.querySelector('[data-action="sell"]')
+    };
+    nodeViews.set(node.id, view);
+    view.quantity.addEventListener('input', function () { updateQuote(state.nodes.find(function (item) { return item.id === node.id; }), view); });
+    article.querySelectorAll('[data-action]').forEach(function (button) {
+      button.setAttribute('aria-label', button.textContent + ' · ' + node.id);
+      button.addEventListener('click', function () {
+        action(button.dataset.action, { id: node.id, quantity: numeric(view.quantity.value) });
+      });
+    });
     renderNode(node);
     nodeGrid.appendChild(article);
   });
-  recurring(function () {
-    nodes.forEach(function (node) {
-      if (!node.priceElement) return;
-      const drift = (Math.random() * 2 - 1) * 0.006;
-      node.price *= 1 + drift;
-      node.liquidity *= 1 + drift;
-      node.change = drift * 100;
-      node.strength = Math.max(45, Math.min(98, node.strength + drift * 35));
-      renderNode(node);
-    });
-  }, 2200, true);
+  recurring(function () { simulation.tick(); }, 2200, true);
+
+  function renderSimulation(next) {
+    const previousPhase = state.phase;
+    state = next;
+    phaseIndex = next.phase;
+    state.nodes.forEach(renderNode);
+    setText('sim-cash', number.format(state.cash));
+    setText('sim-equity', number.format(state.equity));
+    setText('sim-stability', number.format(state.stability) + ' %');
+    setText('sim-coherence', number.format(state.coherence) + ' %');
+    setText('sim-time', 'ZYKLUS ' + state.cycle + ' / ' + precise.format(state.minutes) + ' MIN / ' + state.phaseName + (state.paused ? ' / PAUSIERT' : motion.matches ? ' / MANUELLE ZEIT' : ' / AKTIV'));
+    setText('sim-climate', 'KERN ' + number.format(state.visual.temperature) + ' °C / KORONA ' + number.format(state.visual.corona * 100) + ' %');
+    setText('eclipse-current', 'Aktuelle Korona: ' + number.format(state.visual.corona * 100) + ' % · ' + state.phaseName);
+    setText('hero-temperature', number.format(state.visual.temperature));
+    setText('sim-fees', 'HANDELSGEBÜHREN ' + interest.format(state.feesPaid) + ' CNX');
+    setText('vault-state', state.vault.open ? 'ZEITFENSTER OFFEN' : 'GESPERRT');
+    const ledger = document.querySelector('.vault-ledger');
+    if (ledger) ledger.dataset.open = String(state.vault.open);
+    setText('vault-balance', interest.format(state.vault.balance) + ' CNX');
+    setText('vault-earned', interest.format(state.vault.earned) + ' CNX');
+    setText('vault-apr', number.format(state.vault.apr) + ' % p. a.');
+    const conditions = document.getElementById('vault-conditions');
+    if (conditions) {
+      conditions.replaceChildren();
+      state.vault.conditions.forEach(function (condition) {
+        const item = document.createElement('li');
+        item.textContent = condition.label; item.dataset.met = String(condition.met); conditions.appendChild(item);
+      });
+    }
+    const deposit = document.getElementById('vault-deposit'), withdraw = document.getElementById('vault-withdraw');
+    if (deposit) deposit.disabled = !state.vault.open;
+    if (withdraw) withdraw.disabled = !state.vault.open || state.vault.balance <= 0;
+    setText('vault-message', state.vault.open ? 'Das Fenster ist offen. Einlagern und Entnehmen sind möglich.' : state.vault.conditions.filter(function (condition) { return !condition.met; }).map(function (condition) { return condition.label; }).join(' · '));
+    const pause = document.getElementById('simulation-pause');
+    if (pause) { pause.textContent = state.paused ? 'Simulation fortsetzen' : 'Simulation pausieren'; pause.setAttribute('aria-pressed', String(state.paused)); }
+    phaseButtons.forEach(function (button) { button.setAttribute('aria-pressed', String(Number(button.dataset.phase) === phaseIndex)); });
+    setText('phase-description', phases[phaseIndex].description + ' · Kohärenz ' + number.format(state.coherence) + ' % · Vault ' + (state.vault.open ? 'offen' : 'gesperrt'));
+    const key = state.history.map(function (item) { return item.id; }).join(',');
+    if (key !== traceKey) {
+      traceKey = key;
+      const list = document.getElementById('simulation-history');
+      if (list) {
+        list.replaceChildren();
+        state.history.slice(-20).reverse().forEach(function (entry) {
+          const item = document.createElement('li'), stamp = document.createElement('time'), text = document.createElement('span');
+          stamp.textContent = 'T+' + entry.tick * 5 + ' MIN / ' + phases[entry.phase].name;
+          text.textContent = entry.text; item.append(stamp, text); list.appendChild(item);
+        });
+        if (!list.children.length) { const item = document.createElement('li'); item.textContent = 'Deine erste Entscheidung schreibt die nächste Zeitspur.'; list.appendChild(item); }
+      }
+    }
+    try { window.localStorage.setItem(storageKey, JSON.stringify(simulation.serialize())); }
+    catch (_) { storageAvailable = false; }
+    setText('simulation-storage', storageAvailable ? 'FORTSCHRITT AUF DIESEM GERÄT GESPEICHERT' : 'SITZUNG OHNE DAUERHAFTEN SPEICHER');
+    if (previousPhase !== phaseIndex) document.dispatchEvent(new CustomEvent('cryonexus:phase', { detail: { index: phaseIndex, name: state.phaseName } }));
+    document.dispatchEvent(new CustomEvent('cryonexus:simulation', { detail: state.visual }));
+  }
 
   function appendTerminal(text, kind) {
     if (!terminalOutput) return;
@@ -180,7 +293,7 @@
     while (terminalOutput.children.length > 160) terminalOutput.firstElementChild.remove();
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
   }
-  const script = ['CRYONEXUS / VAULT v.04', 'Kryo-Verbindung hergestellt …', '6 Knoten validiert. Schattenmarkt verfügbar.', 'Kerntemperatur −268 °C. Restlauf ∞.', 'Zugriff gewährt: ZEITZEUGE.', 'Eingabe bereit. „help“ zeigt alle Befehle.'];
+  const script = ['CRYONEXUS / VAULT v.04', 'Kryo-Verbindung hergestellt …', '6 Knoten validiert. Schattenmarkt verfügbar.', 'Kerntemperatur −268 °C. Restlauf ∞.', 'Rolle erkannt: ZEITZEUGE. Vault-Zugang folgt dem Netzwerk.', 'Eingabe bereit. „help“ zeigt alle Befehle.'];
   appendTerminal(script[scriptIndex++], 'system');
   function autoplayLine() {
     if (scriptStopped) return;
@@ -196,32 +309,55 @@
   function terminalCommand(raw) {
     scriptStopped = true;
     finishJob(terminalJob);
-    const command = raw.trim().toLowerCase();
+    const parts = raw.trim().split(/\s+/);
+    const command = parts[0].toLowerCase();
     if (!command) return;
     if (command === 'clear') { if (terminalOutput) terminalOutput.replaceChildren(); return; }
     appendTerminal('cryo@vault:~$ ' + raw.trim(), 'system');
+    const id = (parts[1] || '').toUpperCase();
+    let result;
     switch (command) {
       case 'help':
-        appendTerminal('help    → Befehle anzeigen\nstatus  → Kammerstatus lesen\nnodes   → Sechs Knoten und Live-Werte\nphase   → Aktuelle Phase und Zeitlinie\neclipse → Finsternis-Messdaten\nvault   → Zugriffsprotokoll\nclear   → Ausgabe leeren');
+        appendTerminal('help / status / nodes / phase / eclipse / vault / clear\nportfolio → Guthaben, Positionen, Gebühren\nhistory → Deine Zeitspuren\nphase 1..5 → Phase wählen (kostet Kohärenz)\nbuy ID Menge / sell ID Menge → Handeln\nlink ID / unlink ID → Zeitbindung (1.200 / +400 CNX)\nstabilize ID → Knoten stärken (700 CNX)\ndeposit Betrag / withdraw Betrag → Vault\npause / resume / step → Simulationszeit steuern\nreset confirm → Lokalen Fortschritt löschen\nBeispiel: buy CN-ALPHA-01 2,5\nAlle Werte sind fiktiv, lokal und deterministisch.');
         break;
       case 'status':
-        appendTerminal('KAMMER 04 · KRITISCH STABIL\nUTC ' + new Date().toISOString().slice(11, 19) + '\nSzenen: ' + builtScenes.size + '/6 · Phase: ' + phases[phaseIndex].name + '\nKerntemperatur: −268 °C · Restlauf: ∞\nNetzwerk: lokal · Marktdaten: simuliert');
+        appendTerminal('KAMMER 04 · LOKALE SIMULATION\nUTC ' + new Date().toISOString().slice(11, 19) + '\nSzenen: ' + builtScenes.size + '/6 · Phase: ' + state.phaseName + '\nKerntemperatur: ' + number.format(state.visual.temperature) + ' °C\nStabilität: ' + number.format(state.stability) + ' % · Kohärenz: ' + number.format(state.coherence) + ' %\nSimulationszeit: ' + state.minutes + ' Minuten · Zyklus ' + state.cycle + '\nNetzwerk: lokal · Marktdaten: simuliert · ' + (state.paused ? 'PAUSIERT' : motion.matches ? 'MANUELLE ZEIT' : 'AKTIV'));
         break;
       case 'nodes':
-        appendTerminal(nodes.map(function (node) { return node.id + ' / ' + node.sector + ' / ' + number.format(node.price) + ' CNX'; }).join('\n'));
+        appendTerminal(state.nodes.map(function (node) { return node.id + ' / ' + node.sector + ' / ' + number.format(node.price) + ' CNX / Stärke ' + number.format(node.strength) + ' % / Bestand ' + precise.format(node.quantity) + (node.bound ? ' / GEBUNDEN' : ''); }).join('\n'));
         break;
       case 'phase':
-        appendTerminal('Aktive Phase: ' + phases[phaseIndex].name + ' / ' + phases[phaseIndex].time + '\n' + phases.map(function (phase, index) { return (index === phaseIndex ? '› ' : '  ') + phase.name + ' ' + phase.time; }).join('\n') + '\nWähle eine Phase in der Zeitlinie.');
+        if (parts.length > 1) {
+          const index = /^[1-5]$/.test(parts[1]) ? Number(parts[1]) - 1 : phases.findIndex(function (phase) { return phase.name.toLowerCase() === parts[1].toLowerCase(); });
+          result = index >= 0 ? selectPhase(index, true) : announce({ ok: false, message: 'Phase als Zahl 1–5 oder Phasenname angeben.' });
+        } else appendTerminal('Aktive Phase: ' + state.phaseName + ' / ' + phases[phaseIndex].time + '\n' + phases.map(function (phase, index) { return (index === phaseIndex ? '› ' : '  ') + (index + 1) + ' ' + phase.name + ' ' + phase.time; }).join('\n') + '\nManuelle Wechsel verbrauchen Kohärenz; automatische Wechsel nicht.');
         break;
       case 'eclipse':
-        appendTerminal('TOTALE SONNENFINSTERNIS\nKorona: 99,97 % · Brechungsindex: 1,3091\nKristallschollen: 46 · Kammer: 04\nLicht bricht sich durch einen Ring aus Eis.');
+        appendTerminal('TOTALE SONNENFINSTERNIS / ' + state.phaseName + '\nAktuelle Korona: ' + number.format(state.visual.corona * 100) + ' %\nKalibrierte Totalität: 99,97 % · Brechungsindex: 1,3091\nKristallschollen: 46 · Kammer: 04\nStrahlungsfluss: ' + number.format(state.visual.flux * 100) + ' % · Kern: ' + number.format(state.visual.temperature) + ' °C');
         break;
       case 'vault':
-        appendTerminal('VAULT / ZUGRIFF GEWÄHRT\nRolle: ZEITZEUGE · Protokoll: v.04\n6 validierte Verbindungen · Verschlüsselung aktiv\nLokale Simulation. Keine Wallet erforderlich.');
+        appendTerminal('VAULT / ' + (state.vault.open ? 'ZUGRIFF GEWÄHRT' : 'ZEITFENSTER GESPERRT') + '\n' + state.vault.conditions.map(function (condition) { return (condition.met ? '✓ ' : '○ ') + condition.label; }).join('\n') + '\nGuthaben ' + interest.format(state.vault.balance) + ' CNX · Ertrag ' + interest.format(state.vault.earned) + ' CNX\nSimulierter Jahreszins ' + number.format(state.vault.apr) + ' % · nur während des offenen Fensters\nLokale Simulation. Keine Wallet erforderlich.');
         break;
+      case 'portfolio':
+        appendTerminal('VERMÖGEN ' + number.format(state.equity) + ' CNX\nVerfügbar ' + number.format(state.cash) + ' CNX · Positionen ' + number.format(state.portfolioValue) + ' CNX · Vault ' + interest.format(state.vault.balance) + ' CNX\nHandelsgebühren bisher ' + interest.format(state.feesPaid) + ' CNX\n' + state.nodes.map(function (node) { return node.id + ': ' + precise.format(node.quantity) + ' / ' + number.format(node.positionValue) + ' CNX'; }).join('\n'));
+        break;
+      case 'history':
+        appendTerminal(state.history.length ? state.history.slice(-20).map(function (entry) { return 'T+' + entry.tick * 5 + ' MIN / ' + phases[entry.phase].name + ' / ' + entry.text; }).join('\n') : 'Noch keine Zeitspuren. Deine Entscheidungen schreiben die Geschichte.');
+        break;
+      case 'buy': case 'sell':
+        result = action(command, { id: id, quantity: numeric(parts[2] || '') }); break;
+      case 'link': case 'unlink': case 'stabilize':
+        result = action(command, { id: id }); break;
+      case 'deposit': case 'withdraw':
+        result = action(command, { amount: numeric(parts[1] || '') }); break;
+      case 'pause': case 'resume': case 'step':
+        result = action(command); break;
+      case 'reset':
+        result = parts[1] === 'confirm' ? action('reset') : announce({ ok: false, message: '„reset confirm“ löscht alle lokalen Käufe, Bindungen und Zeitspuren und startet mit 100.000 CNX.' }); break;
       default:
         appendTerminal('Unbekannter Befehl: „' + raw.trim() + '“. Mit „help“ findest du alle Befehle.', 'error');
     }
+    if (result) appendTerminal(result.message, result.ok ? 'response' : 'error');
   }
   const history = [];
   let historyIndex = 0;
@@ -248,23 +384,51 @@
     });
   }
 
-  function selectPhase(index) {
-    phaseIndex = index;
-    phaseButtons.forEach(function (button) { button.setAttribute('aria-pressed', String(Number(button.dataset.phase) === index)); });
-    const description = document.getElementById('phase-description');
-    if (description) description.textContent = phases[index].description;
-    document.dispatchEvent(new CustomEvent('cryonexus:phase', { detail: { index: index, name: phases[index].name } }));
+  function selectPhase(index, manual) {
+    const result = simulation.selectPhase(index, { manual: manual !== false });
+    if (manual !== false) {
+      announce(result);
+      if (result.ok && phaseJob) { stopJob(phaseJob); startJob(phaseJob); }
+    }
+    return result;
   }
-  const phaseJob = recurring(function () { selectPhase((phaseIndex + 1) % phases.length); }, 5200, true);
+  phaseJob = recurring(function () {
+    if (!state.paused) selectPhase((phaseIndex + 1) % phases.length, false);
+  }, 5200, true);
   phaseButtons.forEach(function (button) {
-    button.addEventListener('click', function () {
-      selectPhase(Number(button.dataset.phase));
-      // Give a manually selected phase a full cycle before advancing again.
-      stopJob(phaseJob);
-      startJob(phaseJob);
+    button.addEventListener('click', function () { selectPhase(Number(button.dataset.phase), true); });
+  });
+  const pauseButton = document.getElementById('simulation-pause');
+  if (pauseButton) pauseButton.addEventListener('click', function () { action(state.paused ? 'resume' : 'pause'); });
+  const stepButton = document.getElementById('simulation-step');
+  if (stepButton) stepButton.addEventListener('click', function () { action('step'); });
+  ['deposit', 'withdraw'].forEach(function (type) {
+    const button = document.getElementById('vault-' + type);
+    if (button) button.addEventListener('click', function () {
+      const result = action(type, { amount: numeric(document.getElementById('vault-amount').value) });
+      setText('vault-message', result.message);
     });
   });
-  selectPhase(0);
+  const resetButton = document.getElementById('simulation-reset');
+  function disarmReset() {
+    resetArmed = false;
+    if (resetTimer) window.clearTimeout(resetTimer);
+    resetTimer = 0;
+    if (resetButton) resetButton.textContent = 'Neustart';
+  }
+  if (resetButton) resetButton.addEventListener('click', function () {
+    if (!resetArmed) {
+      resetArmed = true;
+      resetButton.textContent = 'Fortschritt löschen bestätigen';
+      announce({ ok: true, message: 'Nochmals drücken: Käufe, Bindungen und Zeitspuren werden gelöscht. Neues Startkapital: 100.000 CNX.' });
+      resetTimer = window.setTimeout(disarmReset, 8000);
+    } else { disarmReset(); action('reset'); }
+  });
+  simulation.subscribe(renderSimulation);
+  // Publish the restored initial phase, including a cold reduced-motion session.
+  document.dispatchEvent(new CustomEvent('cryonexus:phase', { detail: { index: state.phase, name: state.phaseName } }));
+  if (storageCorrupt) announce({ ok: false, message: 'Der gespeicherte Fortschritt war beschädigt. Eine neue lokale Simulation wurde gestartet.' });
+  if (state.restoreError) announce({ ok: false, message: state.restoreError });
 
   const countElements = Array.from(document.querySelectorAll('[data-count]'));
   function countFormat(element, value) {
@@ -425,6 +589,7 @@
 
   function motionChanged() {
     jobs.forEach(function (job) { stopJob(job); startJob(job); });
+    renderSimulation(simulation.snapshot());
     if (motion.matches) {
       stopFrames();
       clearDepth();

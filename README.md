@@ -6,7 +6,7 @@
 
 Eine deutschsprachige, prozedurale 3D-Erfahrung zwischen Eis, Finsternis und Schattenmarkt. Sechs Szenen teilen sich ein deterministisches Simulationsmodell: Deine Käufe, Bindungen und Phasenwechsel verändern Zahlen, Vault-Zugang und die sichtbare Welt.
 
-**[Starten](#in-einer-minute-starten) · [Handbuch / Wiki](docs/wiki/Home.md) · [Architektur](docs/wiki/Architektur.md) · [Prüfbericht](VERIFICATION.md)**
+**[App öffnen](https://pierreg99.github.io/CryoNexis-Lunar-Eclispe/) · [Lokal starten](#in-einer-minute-starten) · [Handbuch / Wiki](docs/wiki/Home.md) · [Architektur](docs/wiki/Architektur.md) · [Prüfbericht](VERIFICATION.md)**
 
 | Erlebnis | Architektur | Auslieferung | Prüfung |
 | --- | --- | --- | --- |
@@ -79,6 +79,6 @@ Der letzte vollständige Testlauf bestand zehn Modell-Testgruppen und acht HTTP-
 
 Das [Handbuch](docs/wiki/Home.md) führt vom ersten Vault bis zu Formeln, Modulverträgen und Veröffentlichung. Seine Markdown-Seiten liegen versioniert in `docs/wiki/`; Sidebar und Footer sind für das GitHub-Wiki vorbereitet. Das Wiki ist auf GitHub aktiviert, sein separates Git-Repository ist noch nicht initialisiert. Das [Veröffentlichungsskript](scripts/publish-wiki.py) exportiert und synchronisiert die Seiten, sobald eine erste Wiki-Seite angelegt wurde.
 
-Für statisches Hosting wird ausschließlich `dist/` ausgeliefert. GitHub Pages ist für öffentliche Repositories innerhalb der geltenden GitHub-Limits kostenlos; die App benötigt keine zusätzlichen Dienste. Die Pages-Veröffentlichung ist noch nicht erfolgt. [Hosting und Wiki veröffentlichen →](docs/wiki/Hosting-und-Wiki.md)
+Die vollständige App ist auf **[GitHub Pages](https://pierreg99.github.io/CryoNexis-Lunar-Eclispe/)** veröffentlicht. Alle acht Laufzeitdateien stammen unverändert aus `main/dist/`; der konfigurierte Pages-Branch `codex/lunar-eclipse` enthält die App zusätzlich im Root. Das [Pages-Skript](scripts/publish-pages.py) veröffentlicht neue, bereits auf `main` gepushte Versionen. GitHub Pages ist für öffentliche Repositories innerhalb der geltenden GitHub-Limits kostenlos; die App benötigt keine zusätzlichen Dienste. [Hosting und Wiki veröffentlichen →](docs/wiki/Hosting-und-Wiki.md)
 
 Three.js r149 ist lokal enthalten und unter MIT lizenziert: [Lizenz](dist/assets/vendor/THREE-LICENSE.txt). Für den eigenen Projektcode ist bislang keine separate Lizenz festgelegt.

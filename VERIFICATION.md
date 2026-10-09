@@ -5,7 +5,7 @@ Geprüft am 9. Oktober 2026 mit Chromium 151.0.7922.173 in der verwalteten Linux
 | Prüfung | Ergebnis |
 | --- | --- |
 | Vollständige lokale Auslieferung | 8 Laufzeitdateien, insgesamt 739.689 Bytes; unter 1,2 MB |
-| Projektstruktur | 31 versionierte Projektdateien einschließlich README, Wiki und Veröffentlichungsskript; vier getrennte Schichten: Modell, Oberfläche, Szenen, Engine |
+| Projektstruktur | 32 versionierte Quelldateien auf `main` einschließlich README, Wiki und Veröffentlichungsskripten; vier getrennte Schichten: Modell, Oberfläche, Szenen, Engine |
 | Skriptreihenfolge und CSS-Struktur | Three.js → Cinema → Szenen → Simulation → App; 20 nummerierte CSS-Blöcke |
 | Desktop und Mobilgerät | Alle sechs Sektionen und Interaktionen geprüft; kein horizontaler Überlauf |
 | Lazy-Build und WebGL-Limit | Jede Szene genau einmal gebaut; maximal zwei tatsächliche WebGL-Kontexte |
@@ -34,6 +34,16 @@ Die exakten Geometriezahlen und prozeduralen Shader bleiben erhalten. Zustandsä
 Die README wurde mit GitHubs Markdown-Renderer geprüft. 13 Wiki-Markdown-Dateien einschließlich Sidebar und Footer wurden lokal exportiert; 100 relative Links und Seitenanker wurden auf vorhandene Ziele geprüft. Das Schnellstart-Beispiel wurde gegen das Modell ausgeführt: Kohärenz 69, Stabilität 77,4333, Vault-Zins 19,164 %. Titelbild und README wurden in heller, dunkler und mobiler Vorschau geprüft.
 
 Das Veröffentlichungsskript meldet die noch fehlende Wiki-Initialisierung ausdrücklich. Das Wiki ist aktiviert, besitzt aber noch kein separates Git-Repository; die erste Home-Seite muss über GitHub angelegt werden. Alle Wiki-Quellen sind bereits im Projekt verfügbar. Diese Dokumentationsänderungen betreffen keine Datei in `dist/`; die oben dokumentierte Laufzeitprüfung bleibt unverändert.
+
+## GitHub Pages
+
+Die vollständige App ist unter [pierreg99.github.io/CryoNexis-Lunar-Eclispe](https://pierreg99.github.io/CryoNexis-Lunar-Eclispe/) veröffentlicht. Der [Pages-Build für die erste vollständige Auslieferung](https://github.com/Pierreg99/CryoNexis-Lunar-Eclispe/actions/runs/37999049137) hat erfolgreich abgeschlossen. Alle acht öffentlich abgerufenen Laufzeitdateien stimmen bytegenau mit `main/dist/` überein: insgesamt 739.689 Bytes einschließlich Three.js-Lizenz.
+
+Die vorhandene Pages-Konfiguration verwendet `codex/lunar-eclipse` im Root. Das [Pages-Skript](scripts/publish-pages.py) übernimmt den gepushten Hauptbranch, veröffentlicht dessen exakte Laufzeitdateien im Root und ergänzt `.nojekyll`; es überschreibt keine anderen Branch-Dateien und pusht ohne Force. Die Pages-Einstellungen konnten mit dem eingerichteten GitHub-Zugang nicht geändert werden (API 403), weshalb kein Actions-Artefakt-Workflow eingerichtet wurde. Wiederholte Veröffentlichung: [Hosting-Anleitung](docs/wiki/Hosting-und-Wiki.md#app-aktualisieren).
+
+Die bestehenden Akzeptanz-Suites wurden zusätzlich gegen die öffentliche HTTPS-Adresse ausgeführt: alle acht Browserdurchläufe bestanden. Geprüft wurden Desktop, Mobilansicht, reduzierte Bewegung, unabhängige Kontext-Wiederherstellung, Handel und Vault, Reaktion aller sechs Szenen, Speicherung und Speicherfehler sowie der Boot-Fail-Safe. Die Live-App erzeugte keine externen App-Requests, fehlgeschlagenen Ressourcen oder Anwendungsfehler. Die zehn Modell-Testgruppen bestehen ebenfalls unverändert.
+
+Für diesen Live-Lauf wartete die Prüfkopie beim normalen Start bis zu 30 Sekunden auf das Ende des Boot-Overlays, nachdem die erste fünfsekündige Wartezeit auf dem Software-Renderer überschritten wurde. Die eigenständige 4.200-ms-Deadline-Prüfung blieb unverändert und bestand mit 4.200,4 ms. Es wurden keine Laufzeitdateien für die Prüfung verändert. Die ergänzte Dokumentation besteht die Prüfung von 15 Markdown-Dateien und 106 relativen Links und Ankern; der Wiki-Export enthält weiterhin 13 Seiten einschließlich Sidebar und Footer.
 
 ## Verbleibende Nachweise
 

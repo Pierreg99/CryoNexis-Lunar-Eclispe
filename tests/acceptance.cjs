@@ -59,9 +59,10 @@ function instrument() {
     const context = getContext.call(this, type, ...args);
     if (/^webgl2?$|^experimental-webgl$/.test(type) && context && !monitor.contexts.includes(context)) {
       monitor.contexts.push(context);
-      const resources = { buffers: new Set(), textures: new Set(), framebuffers: new Set(), renderbuffers: new Set() };
+      const resources = { buffers: new Set(), textures: new Set(), framebuffers: new Set(), renderbuffers: new Set(), vertexArrays: new Set() };
       monitor.gpuResources.push(resources);
-      for (const [name, kind] of [['Buffer', 'buffers'], ['Texture', 'textures'], ['Framebuffer', 'framebuffers'], ['Renderbuffer', 'renderbuffers']]) {
+      for (const [name, kind] of [['Buffer', 'buffers'], ['Texture', 'textures'], ['Framebuffer', 'framebuffers'], ['Renderbuffer', 'renderbuffers'], ['VertexArray', 'vertexArrays']]) {
+        if (typeof context[`create${name}`] !== 'function') continue;
         const create = context[`create${name}`].bind(context), remove = context[`delete${name}`].bind(context);
         context[`create${name}`] = function (...args) {
           const resource = create(...args); if (resource) resources[kind].add(resource); return resource;
@@ -520,6 +521,7 @@ async function gpuMemoryRun(browser, url) {
     assert.equal(resources.framebuffers, baseline.framebuffers);
     assert.equal(resources.renderbuffers, baseline.renderbuffers);
     assert(resources.buffers <= baseline.buffers + 4, 'Offscreen instance matrices or scene vertex buffers leaked');
+    assert(resources.vertexArrays <= baseline.vertexArrays + 3, 'Scene vertex arrays retained released buffer references');
   });
   await page.evaluate(() => document.getElementById('gpu-idle-spacer').remove());
   await page.setViewportSize({ width: 640, height: 360 });

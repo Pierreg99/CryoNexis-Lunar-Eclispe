@@ -25,7 +25,7 @@ flowchart TD
 | [index.html](../../dist/index.html) | Sechs semantische Sektionen und stabile IDs | Laufzeitberechnungen |
 | [main.css](../../dist/assets/css/main.css) | 20 nummerierte Blöcke, Tokens, responsive Gestaltung | Modellzustand |
 
-Die Ladefolge ist **Three.js → Cinema → Szenen → Simulation → App**. Klassische Skripte ermöglichen die lokale Dateistruktur ohne Bundler und ohne ES-Modulimporte. Das Modell exportiert zusätzlich CommonJS für seine Node-Tests.
+Die kritische Ladefolge ist **Cinema → Simulation → App**, mit drei `defer`-Skripten im HTML-Kopf. Die kleine Engine stellt Audio und Simulations-Abonnements auch ohne Three.js bereit. Sobald die Oberfläche bedienbar ist, lädt die App nach zwei Animationsframes und einer Idle-Gelegenheit **Three.js → Szenen** nach. `requestIdleCallback` besitzt einen 1.500-ms-Timeout; Browser ohne diese API verwenden einen Timer. Verborgene Tabs und reduzierte Bewegung starten keinen Grafikdownload. Beim späteren Aktivieren der Bewegung wird einmalig nachgeladen; laufende Downloads werden nicht dupliziert. Entscheidungen vor dem Grafikstart bleiben in der Engine gespeichert und werden beim ersten Szenenframe angewandt. Der Boot-Schirm verschwindet beim UI-Start ohne künstliche Kalibrierungswartezeit; der unabhängige 4.200-ms-Fail-Safe bleibt erhalten. Klassische Skripte ermöglichen die lokale Dateistruktur ohne Bundler und ohne ES-Modulimporte. Das Modell exportiert zusätzlich CommonJS für seine Node-Tests.
 
 ## Modell-API
 

@@ -10,7 +10,7 @@ Eine deutschsprachige, prozedurale 3D-Erfahrung zwischen Eis, Finsternis und Sch
 
 | Erlebnis | Architektur | Auslieferung | Prüfung |
 | --- | --- | --- | --- |
-| 6 prozedurale Szenen | 4 getrennte Schichten | 742.098 Bytes in `dist/` | 10 Modell-Testgruppen + 9 Browserdurchläufe bestanden |
+| 6 prozedurale Szenen | 4 getrennte Schichten | 742.935 Bytes in `dist/` | 10 Modell-Testgruppen + 10 Browserdurchläufe bestanden |
 
 ## In einer Minute starten
 
@@ -59,7 +59,7 @@ flowchart LR
     S -->|vorhandene Geometrie| E
 ```
 
-Die Oberfläche enthält keine 3D-Geometrie. Das Modell kennt weder DOM noch Speicher. Die Engine besitzt höchstens zwei WebGL-Kontexte und rendert ausschließlich sichtbare Szenen. GPU-Daten ausgeblendeter Szenen und große Puffer freier Slots werden freigegeben; CPU-Szenen bleiben gecacht. Viertelauflösender Bloom verwendet zwei permanente Targets ohne Allokationen pro Frame. Alle Skripte laden klassisch und lokal, ohne Bundler oder ES-Modulimporte.
+Die Oberfläche enthält keine 3D-Geometrie. Das Modell kennt weder DOM noch Speicher. Die Engine besitzt höchstens zwei WebGL-Kontexte und rendert ausschließlich sichtbare Szenen. GPU-Daten ausgeblendeter Szenen und große Puffer freier Slots werden freigegeben; CPU-Szenen bleiben gecacht. Viertelauflösender Bloom verwendet zwei permanente Targets ohne Allokationen pro Frame. Die Oberfläche startet mit 78.197 Bytes JavaScript; Three.js und Szenen (632.861 Bytes) laden nach dem ersten UI-Paint nach. Die frühere künstliche 2,4-Sekunden-Boot-Sequenz entfällt. Bei reduzierter Bewegung werden die Grafikskripte erst nach Aktivierung der Bewegung geladen. Alle Skripte laden klassisch und lokal, ohne Bundler oder ES-Modulimporte.
 
 **[Modulverträge →](docs/wiki/Architektur.md) · [Szenen und Shader →](docs/wiki/Szenen.md) · [Farben und Gestaltung →](docs/wiki/Designsystem.md)**
 
@@ -73,7 +73,7 @@ npm test
 
 Nur das Modell prüfen: `npm run test:simulation`. Diese Werkzeuge sind Entwicklungsabhängigkeiten; `dist/` benötigt sie nicht.
 
-Der letzte vollständige Testlauf bestand zehn Modell-Testgruppen und neun HTTP-Browserdurchläufe einschließlich nativer GPU-Ressourcenprüfung bei DPR 2. Zwei `file://`-Versuche wurden durch die verwaltete Browserrichtlinie blockiert. **60 FPS und der gesamte VRAM auf echter Hardware sind noch nicht nachgewiesen.** Die konservative Target-Schätzung ist auf 24,7 MB für beide Renderer-Slots begrenzt. Details, Testauswahl und Messgrenzen stehen im [Prüfbericht](VERIFICATION.md) und im [Test-Handbuch](docs/wiki/Tests-und-Qualitaet.md).
+Der letzte vollständige Testlauf bestand zehn Modell-Testgruppen und zehn HTTP-Browserdurchläufe einschließlich nativer GPU-Ressourcenprüfung bei DPR 2. Zwei `file://`-Versuche wurden durch die verwaltete Browserrichtlinie blockiert. **60 FPS und der gesamte VRAM auf echter Hardware sind noch nicht nachgewiesen.** Die konservative Target-Schätzung ist auf 24,7 MB für beide Renderer-Slots begrenzt. Details, Testauswahl und Messgrenzen stehen im [Prüfbericht](VERIFICATION.md) und im [Test-Handbuch](docs/wiki/Tests-und-Qualitaet.md).
 
 ## Dokumentation und Hosting
 

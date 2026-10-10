@@ -33,8 +33,8 @@ async function staticAcceptance() {
   await Promise.all(expected.map(file => fs.access(path.join(dist, file))));
   const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
   const scripts = Array.from(html.matchAll(/<script\s+src="([^"]+)"/g), match => match[1]);
-  assert.deepEqual(scripts, ['assets/vendor/three.min.js', 'assets/vendor/cinema_engine.js',
-    'assets/js/scenes.js', 'assets/js/simulation.js', 'assets/js/app.js']);
+  assert.deepEqual(scripts, ['assets/vendor/cinema_engine.js', 'assets/js/simulation.js', 'assets/js/app.js']);
+  assert.equal((html.match(/<script[^>]+ defer>/g) || []).length, 3, 'Critical scripts must not block HTML parsing');
   assert.match(html, /<html lang="de"/);
   const css = await fs.readFile(path.join(dist, 'assets/css/main.css'), 'utf8');
   assert.deepEqual(Array.from(css.matchAll(/\/\*\s*(\d{2})\s*[—-]/g), match => Number(match[1])),
@@ -198,6 +198,7 @@ async function open(browser, url, options = {}) {
     const boot = document.querySelector('#boot');
     return getComputedStyle(boot).display === 'none' || boot.classList.contains('done') || boot.hidden;
   }, null, { timeout: 30_000, polling: 50 });
+  if (!options.reduced) await page.waitForFunction(() => window.CryoScenes, null, { timeout: 30_000, polling: 50 });
   await page.waitForTimeout(options.reduced ? 80 : 600);
   return { page, context, faults, environmentWarnings, external, requests };
 }
@@ -602,6 +603,7 @@ async function contextRecovery(browser, url) {
 async function reducedRun(browser, url, name) {
   const run = await open(browser, url, { reduced: true, viewport: { width: 390, height: 844 } });
   const { page } = run;
+  assert(!run.requests.some(url => /three\.min\.js|scenes\.js/.test(url)), 'Reduced-motion startup must not download graphics scripts');
   const prices = await page.locator('.node-price').allTextContents();
   const initialPhase = await page.locator('[data-phase][aria-pressed="true"]').getAttribute('data-phase');
   for (const id of sectionIds) await scrollTo(page, id);
@@ -636,7 +638,7 @@ async function reducedRun(browser, url, name) {
     scrollTo({ top: eclipse.getBoundingClientRect().top + scrollY + 100, behavior: 'instant' });
   });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await page.waitForFunction(() => CryoScenes.built().includes('cn-chamber') && CryoScenes.built().includes('cn-eclipse'),
+  await page.waitForFunction(() => window.CryoScenes && CryoScenes.built().includes('cn-chamber') && CryoScenes.built().includes('cn-eclipse'),
     null, { timeout: 10_000, polling: 100 });
   await assertVisibility(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -922,8 +924,57 @@ async function storageRecovery(browser, url) {
   console.log('PASS storage fallback: corrupt JSON recovers visibly; unavailable storage preserves trading and manual time');
 }
 
+async function startupRun(browser, url) {
+  const context = await browser.newContext({ viewport: { width: 640, height: 360 }, reducedMotion: 'no-preference' });
+  await context.addInitScript(instrument);
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  let release;
+  const held = new Promise(resolve => { release = resolve; });
+  let requested = false;
+  await page.route('**/three.min.js', async route => {
+    requested = true;
+    await held;
+    await route.continue();
+  });
+  try {
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => performance.getEntriesByName('cryonexus:ui-ready').length === 1);
+    await page.waitForFunction(() => document.querySelectorAll('.node-trigger').length === 6);
+    const startup = await page.evaluate(() => ({
+      uiReadyMs: performance.getEntriesByName('cryonexus:ui-ready')[0].startTime,
+      bootDisplay: getComputedStyle(document.getElementById('boot')).display,
+      contexts: cinema.getStats().contexts, threeLoaded: !!window.THREE,
+      criticalScripts: [...document.querySelectorAll('script[defer]')].map(script => script.src),
+    }));
+    assert.equal(startup.bootDisplay, 'none', 'UI must be uncovered while graphics download is stalled');
+    assert.equal(startup.contexts, 0);
+    assert.equal(startup.threeLoaded, false);
+    await page.locator('#simulation-pause').click();
+    const before = await readSimulation(page);
+    await page.locator('#simulation-step').click();
+    const after = await readSimulation(page);
+    assert.notDeepEqual(after, before, 'Simulation controls must work before graphics arrive');
+    await page.locator('[data-phase="2"]').click();
+    assert.equal(await page.locator('[data-phase="2"]').getAttribute('aria-pressed'), 'true');
+    await page.waitForFunction(() => !window.THREE);
+    assert(requested, 'The deferred graphics request should start after the usable UI');
+    release();
+    await page.waitForFunction(() => window.CryoScenes && cinema.getStats().scenes.some(scene => scene.frames > 0),
+      null, { timeout: 30_000, polling: 100 });
+    assert.equal(await page.evaluate(() => cinema.getStats().simulation.phase), 2,
+      'Late graphics must receive the decisions made before their download');
+    assert.deepEqual(errors, []);
+    startup.graphicsReadyMs = await page.evaluate(() => performance.getEntriesByName('cryonexus:graphics-ready')[0].startTime);
+    report.runs.push({ name: 'ui-before-delayed-graphics', startup });
+    console.log(`PASS startup: UI ready at ${startup.uiReadyMs.toFixed(1)}ms; controls and model work during stalled graphics download`);
+  } finally { release(); await context.close(); }
+}
+
 async function bootFailsafe(browser, url) {
-  const run = await open(browser, url, { freezeIntervals: true });
+  const run = await open(browser, url, { freezeIntervals: true, reduced: true });
+  await run.page.waitForFunction(() => __acceptance.bootTimer.completedAt, null, { polling: 50 });
   const timer = await run.page.evaluate(() => __acceptance.bootTimer);
   assert(timer && timer.delay === 4200, 'An independent 4.2-second timer must be scheduled');
   const elapsed = timer.completedAt - timer.scheduledAt;
@@ -936,8 +987,8 @@ async function bootFailsafe(browser, url) {
 }
 
 async function main() {
-  assert(Array.from(suites).every(suite => ['all', 'desktop', 'mobile', 'reduced', 'simulation', 'recovery', 'boot', 'gpu'].includes(suite)),
-    'Unknown ACCEPTANCE_SUITE; use all, desktop, mobile, reduced, simulation, recovery, boot or gpu');
+  assert(Array.from(suites).every(suite => ['all', 'desktop', 'mobile', 'reduced', 'simulation', 'recovery', 'boot', 'gpu', 'startup'].includes(suite)),
+    'Unknown ACCEPTANCE_SUITE; use all, desktop, mobile, reduced, simulation, recovery, boot, gpu or startup');
   report.suites = Array.from(suites);
   await fs.mkdir(artifacts, { recursive: true });
   await staticAcceptance();
@@ -991,6 +1042,7 @@ async function main() {
     if (enabled('gpu')) await gpuMemoryRun(browser, local);
     if (enabled('simulation')) await simulationRun(browser, local);
     if (enabled('boot')) await bootFailsafe(browser, local);
+    if (enabled('startup')) await startupRun(browser, local);
     console.log(`PASS payload ${report.payloadBytes} bytes; Chromium ${report.browser}; ${report.runs.length} browser runs; ${report.blocked.length} policy-blocked runs`);
     if (!fileAllowed && process.env.REQUIRE_FILE_TEST === '1') throw new Error('Required file:// browser validation was blocked by administrator policy');
     report.status = 'passed';

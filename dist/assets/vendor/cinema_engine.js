@@ -1,10 +1,9 @@
 /* CRYONEXUS cinema engine — pooled contexts, linear HDR post FX, local audio. */
 (function () {
   'use strict';
-  const T = window.THREE;
+  let T = window.THREE;
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const instances = [], slots = [];
-  const disabled = !T;
   let selectedPhase = 0;
   let hasSimulation = false;
   let simulation = {
@@ -156,7 +155,7 @@
     instance.raf = requestAnimationFrame(time => draw(instance, time));
   }
   function reconcile() {
-    const candidates = disabled || motion.matches || document.hidden ? [] : instances.filter(i => i.visible && !i.paused && !i.failed).sort((a, b) => b.ratio - a.ratio).slice(0, 2);
+    const candidates = !T || motion.matches || document.hidden ? [] : instances.filter(i => i.visible && !i.paused && !i.failed).sort((a, b) => b.ratio - a.ratio).slice(0, 2);
     instances.forEach(i => { if (!candidates.includes(i) || i.slot?.lost) release(i); });
     candidates.forEach(i => {
       if (i.running) return;
@@ -173,6 +172,7 @@
     entries.forEach(entry => { const i = instances.find(item => item.section === entry.target); if (i) { i.visible = entry.isIntersecting && entry.intersectionRatio > 0; i.ratio = entry.intersectionRatio; } }); reconcile();
   }, { threshold: [0, .01, .25, .5, .75, 1] });
   function boot(canvas, onBuild, onUpdate, opts = {}) {
+    T = window.THREE;
     if (!T) throw new Error('Three.js unavailable');
     const scene = new T.Scene(), camera = new T.PerspectiveCamera(opts.fov || 48, 1, .1, 150);
     camera.position.set(...(opts.camPos || [0, 0, 12])); camera.lookAt(...(opts.lookAt || [0, 0, 0]));

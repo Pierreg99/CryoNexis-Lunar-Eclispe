@@ -110,24 +110,9 @@
     if (!boot) return;
     boot.style.setProperty('--p', '100');
     boot.classList.add('done');
-    if (motion.matches) boot.hidden = true;
+    boot.hidden = true;
+    boot.style.display = 'none';
   }
-  const calibration = ['01 / Kryo-Kammer kalibriert', '02 / Lichtbrechung synchronisiert', '03 / Schattenmarkt verbunden', '04 / Vault-Protokoll geprüft', '05 / Zeitzeuge: Zugang freigegeben'];
-  const bootLines = document.getElementById('boot-lines');
-  let bootStep = 0;
-  function calibrate() {
-    if (!boot || boot.classList.contains('done')) { finishJob(bootJob); return; }
-    if (bootLines) {
-      const line = document.createElement('div');
-      line.textContent = calibration[bootStep];
-      bootLines.appendChild(line);
-    }
-    bootStep += 1;
-    boot.style.setProperty('--p', String(bootStep * 20));
-    if (bootStep === calibration.length) { finishJob(bootJob); finishBoot(); }
-  }
-  const bootJob = recurring(calibrate, 480, true);
-  if (motion.matches) finishBoot();
 
   function setText(id, value) {
     const element = document.getElementById(id);
@@ -599,7 +584,6 @@
       finishCounters();
       finishAutoplay();
       finishBoot();
-      finishJob(bootJob);
       document.querySelectorAll('.reveal').forEach(function (element) { element.classList.add('visible'); });
       if (revealObserver) revealObserver.disconnect();
       if (countObserver) countObserver.disconnect();
@@ -616,4 +600,45 @@
     else { utcClock(); jobs.forEach(startJob); startFrames(); }
   });
   motionChanged();
+  finishBoot();
+  performance.mark('cryonexus:ui-ready');
+
+  // The UI and model are usable before downloading or compiling the 3D layer.
+  // Keep audio and simulation listeners in the small engine loaded above.
+  let graphicsScheduled = false;
+  let graphicsStarted = false;
+  function loadScript(source) {
+    return new Promise(function (resolve, reject) {
+      const script = document.createElement('script');
+      script.src = source;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+  function scheduleGraphics() {
+    if (graphicsScheduled || graphicsStarted || motion.matches || document.hidden) return;
+    graphicsScheduled = true;
+    // Two frames allow the accessible interface to paint before expensive work.
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        const start = function () {
+          graphicsScheduled = false;
+          if (motion.matches || document.hidden || graphicsStarted) return;
+          graphicsStarted = true;
+          loadScript('assets/vendor/three.min.js')
+            .then(function () { return loadScript('assets/js/scenes.js'); })
+            .then(function () { performance.mark('cryonexus:graphics-ready'); })
+            .catch(function () {
+              document.dispatchEvent(new CustomEvent('cryonexus:graphics', { detail: 'fallback' }));
+            });
+        };
+        if (window.requestIdleCallback) window.requestIdleCallback(start, { timeout: 1500 });
+        else window.setTimeout(start, 0);
+      });
+    });
+  }
+  motion.addEventListener('change', scheduleGraphics);
+  document.addEventListener('visibilitychange', scheduleGraphics);
+  scheduleGraphics();
 })();

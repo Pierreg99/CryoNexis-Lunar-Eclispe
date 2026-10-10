@@ -48,15 +48,17 @@ Das Veröffentlichungsskript meldet die noch fehlende Wiki-Initialisierung ausdr
 
 ## GitHub Pages
 
-Die vollständige App ist unter [pierreg99.github.io/CryoNexis-Lunar-Eclispe](https://pierreg99.github.io/CryoNexis-Lunar-Eclispe/) veröffentlicht. Der vorherige [Actions-Deploy der optimierten Engine](https://github.com/Pierreg99/CryoNexis-Lunar-Eclispe/actions/runs/38060361512) hat erfolgreich abgeschlossen. Die Auslieferung enthält alle acht Laufzeitdateien aus `main/dist/`: insgesamt 742.968 Bytes einschließlich Three.js-Lizenz.
+Die vollständige App ist unter [pierreg99.github.io/CryoNexis-Lunar-Eclispe](https://pierreg99.github.io/CryoNexis-Lunar-Eclispe/) veröffentlicht. Der [Actions-Deploy der optimierten UI-Ladefolge](https://github.com/Pierreg99/CryoNexis-Lunar-Eclispe/actions/runs/38086786019) hat erfolgreich abgeschlossen. Die Auslieferung enthält alle acht Laufzeitdateien aus `main/dist/`: insgesamt 742.968 Bytes einschließlich Three.js-Lizenz.
 
 Die aktuelle Pages-Konfiguration verwendet GitHub Actions. Der [Workflow](.github/workflows/pages.yml) liefert `dist/` direkt aus `main` aus und wurde erfolgreich mit dieser Konfiguration ausgeführt. App- und Workflow-Änderungen starten automatisch einen Deploy; `workflow_dispatch` erlaubt eine manuelle Veröffentlichung. Das frühere Skript für die Branch-Veröffentlichung wurde entfernt. Anleitung: [Hosting](docs/wiki/Hosting-und-Wiki.md#app-aktualisieren).
+
+Die neue UI-Auslieferung aus Commit `5706744e53f2334fe01e3f808a8c02cdea05b062` wurde öffentlich geprüft: Alle acht Laufzeitdateien stimmen bytegenau mit `dist/` überein. Die Suites `startup,reduced,boot` bestanden zusätzlich als drei HTTPS-Browserdurchläufe. Auch auf Pages blieben Simulation und Phasenwahl bei absichtlich angehaltenem Grafikdownload bedienbar; verspätete Szenen übernahmen die vorherige Entscheidung. Der Browser lud beim ruhigen Kaltstart keine Grafikskripte. Im einzelnen HTTPS-Startlauf lag die UI-Zeitmarke bei **1.349,1 ms** ab Navigation, einschließlich öffentlicher Netzwerkzugriffe. Dieser Einzelwert ist keine Ladezeit-Zusage für andere Verbindungen oder Geräte. Keine externen App-Requests oder Anwendungsfehler; ein lokaler Datei-URL-Versuch wurde richtlinienbedingt blockiert.
 
 Beim vorherigen Engine-Deploy wurden alle acht Dateien bytegenau mit dem damaligen `dist/` verglichen. Die GPU-Suite einschließlich Vertex-Arrays und die unabhängige Kontext-Wiederherstellung bestanden dort zusätzlich als zwei Browserdurchläufe gegen die öffentliche HTTPS-Adresse. Dabei gab es keine externen App-Requests, fehlgeschlagenen Ressourcen oder Anwendungsfehler.
 
 Bei der ersten Veröffentlichung am 9. Oktober bestanden zusätzlich acht Browserdurchläufe gegen die öffentliche HTTPS-Adresse. Die aktuelle vollständige lokale Prüfung umfasst zehn Browserdurchläufe einschließlich GPU-Lebensdauer und UI-Ladepfad; das Modell besteht zehn Testgruppen.
 
-Die Tests warten bei initialer Software-Shader-Kompilierung bis zu 30 Sekunden auf funktionale Zustände; die eigenständige 4.200-ms-Deadline-Prüfung bleibt unverändert und bestand mit 4.200,4 ms. Für die Prüfung wurden keine Laufzeitdateien verändert. Der Wiki-Export enthält weiterhin 13 Seiten einschließlich Sidebar und Footer.
+Die Tests warten bei initialer Software-Shader-Kompilierung bis zu 30 Sekunden auf funktionale Zustände; die eigenständige 4.200-ms-Deadline-Prüfung bleibt unverändert und wurde separat auf seinen 4.200-ms-Zeitraum geprüft. Für die Prüfung wurden keine Laufzeitdateien verändert. Der Wiki-Export enthält weiterhin 13 Seiten einschließlich Sidebar und Footer.
 
 ## Verbleibende Nachweise
 

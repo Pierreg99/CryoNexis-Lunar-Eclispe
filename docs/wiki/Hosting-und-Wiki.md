@@ -8,7 +8,7 @@ Die App und das Wiki besitzen getrennte Auslieferungen. `dist/` ist die statisch
 
 Für öffentliche Repositories ist GitHub Pages innerhalb der geltenden GitHub-Limits kostenlos. CRYONEXUS benötigt keine bezahlten Datenquellen, API-Schlüssel, Server-Datenbank oder Hintergrundprozesse. Kosten und Limits des Hostingkontos hängen von GitHub ab; die App erzeugt keine zusätzlichen Dienste.
 
-Die vollständige App ist unter **[pierreg99.github.io/CryoNexis-Lunar-Eclispe](https://pierreg99.github.io/CryoNexis-Lunar-Eclispe/)** veröffentlicht. GitHub Pages verwendet den Branch `codex/lunar-eclipse` und dessen Root (`/`). Dort liegen **alle acht Dateien aus `main/dist/`** unverändert, ergänzt um `.nojekyll` für die direkte statische Auslieferung:
+Die vollständige App ist unter **[pierreg99.github.io/CryoNexis-Lunar-Eclispe](https://pierreg99.github.io/CryoNexis-Lunar-Eclispe/)** veröffentlicht. GitHub Pages verwendet **GitHub Actions**. Der [Pages-Workflow](../../.github/workflows/pages.yml) verpackt **alle acht Dateien aus `main/dist/`** unverändert als statisches Pages-Artefakt:
 
 ```text
 index.html
@@ -22,19 +22,19 @@ assets/
   vendor/THREE-LICENSE.txt
 ```
 
-GitHub Pages bietet bei Branch-Veröffentlichung Root oder `/docs` als Quellordner an, nicht `/dist`. Deshalb kopiert die Veröffentlichung die Laufzeitdateien in das Root des bereits konfigurierten Pages-Branches. Der Hauptbranch `main` bleibt die Quelle für Simulation, Tests und Handbuch. Änderungen an `main` werden erst nach dem folgenden Veröffentlichungsaufruf live; der GitHub-Zugang dieser Einrichtung erlaubt Code-Pushes, aber keine Umstellung der Pages-Einstellungen über die API.
+GitHub Pages bietet bei Branch-Veröffentlichung Root oder `/docs` als Quellordner an, nicht `/dist`. Der Actions-Workflow liefert deshalb den Inhalt von `dist/` als Artefakt aus, ohne Jekyll, Bundler oder Installation von Laufzeitabhängigkeiten. `main` enthält Simulation, Tests und Handbuch. Der frühere Pages-Branch ist für die aktuelle Veröffentlichung nicht erforderlich.
 
 ## App aktualisieren
 
 Nach dem Commit deiner Änderungen:
 
 ```sh
-python3 scripts/publish-pages.py --dry-run
 git push origin main
-python3 scripts/publish-pages.py
 ```
 
-Das [Veröffentlichungsskript](../../scripts/publish-pages.py) klont den Pages-Branch in ein temporäres Verzeichnis, übernimmt den bereits gepushten `main` und exportiert dessen exakte `dist/`-Dateien in das Root. Es committet die Auslieferung und pusht ohne Force; andere Branch-Dateien bleiben erhalten. Lokale uncommittete App-Änderungen werden nicht veröffentlicht. GitHub startet anschließend den bestehenden Pages-Build und die Veröffentlichung. `--branch` wählt bei einer späteren Umstellung einen anderen, bereits in Pages konfigurierten Zielbranch.
+Änderungen unter `dist/` oder an `.github/workflows/pages.yml` starten die Veröffentlichung automatisch. Dokumentationsänderungen allein lösen keinen erneuten Build aus. Für eine manuelle Veröffentlichung öffne in [GitHub Actions](https://github.com/Pierreg99/CryoNexis-Lunar-Eclispe/actions/workflows/pages.yml) **Deploy full application to GitHub Pages → Run workflow → main**.
+
+Der Workflow verwendet gepinnte offizielle GitHub-Actions, packt `dist/` und veröffentlicht über das Environment `github-pages`. Nur der Deploy-Job erhält `pages: write` und `id-token: write`; der Paket-Job liest Quelle und Pages-Konfiguration. Die Runtime benötigt weiterhin keinen Server und keine API-Schlüssel.
 
 Relative Ressourcenpfade funktionieren auch unter dem Projektpfad. Die veröffentlichten Dateien wurden bytegenau mit der Quelle verglichen. Nach weiteren Veröffentlichungen Sektionen, Assets, Tastatur, Klang, reduzierte Bewegung und Speicherung auf der echten Pages-Adresse prüfen. Ein anderer Origin besitzt einen eigenen lokalen Spielstand.
 

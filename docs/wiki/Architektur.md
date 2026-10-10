@@ -70,14 +70,18 @@ Ungültige gespeicherte Versionen, Zahlen, IDs, Schlüssel oder Historien starte
 
 ## Renderer und Lebenszyklus
 
-Szenen werden innerhalb eines 250-px-Vorlaufs einmalig gebaut und bleiben gecacht. Die sechs ursprünglichen Canvas-Elemente sind Anker. Zwei gemeinsam genutzte Renderer bewegen ihre tatsächlichen Canvas-Flächen zu den sichtbaren Sektionen.
+Szenen werden innerhalb eines 250-px-Vorlaufs einmalig gebaut. Ihre CPU-Geometrien und Spielzustände bleiben gecacht. Die sechs ursprünglichen Canvas-Elemente sind Anker. Zwei gemeinsam genutzte Renderer bewegen ihre tatsächlichen Canvas-Flächen zu den sichtbaren Sektionen; die Zahl der Kontexte wächst auch bei wiederholtem Scrollen nicht.
 
-Vor jedem Draw prüft die Engine die aktuelle Bildschirmposition. Verborgene Tabs, Offscreen-Sektionen und reduzierte Bewegung erzeugen keine Renderframes. Kontextwiederherstellung ersetzt verlorene Render-Targets, erhält aber Szenen und Kontextanzahl.
+Vor jedem Draw prüft die Engine die aktuelle Bildschirmposition. Verborgene Tabs, Offscreen-Sektionen und reduzierte Bewegung erzeugen keine Renderframes. Beim Freigeben einer Szene werden ihre GPU-Geometrien, Instanzbuffer und Materialprogramme disposed; die CPU-Objekte bleiben für die nächste Sichtbarkeit verfügbar. Three.js lädt deren Daten beim Zurückscrollen erneut hoch, ohne den Szenen-Builder neu auszuführen.
+
+Ein freier Renderer-Slot schrumpft seine Canvas-Fläche und drei Render-Targets auf 1 × 1. Dadurch werden große Texturen und Framebuffer freigegeben. Die zwei Kontexte bleiben wiederverwendbar, einschließlich ihrer kleinen Standardsampler, des Fullscreen-Quads und der drei Post-FX-Programme. Kontextwiederherstellung ersetzt verlorene Render-Targets, erhält aber Szenen und Kontextanzahl.
+
+Jeder aktive Slot nutzt ein Szenen-Target mit Tiefenpuffer und zwei Bloom-Targets auf Viertelbreite und Viertelhöhe. Der Blur wechselt zwischen den beiden kleinen Targets. Auflösung: DPR höchstens 1,5, höchstens 1.600 × 1.300 und 950.000 Pixel, zusätzlich adaptive Skalierung. Bei Half-Float ergeben sich konservativ höchstens **12,35 MB Target-Speicher je Slot**, also **24,7 MB für zwei Slots**. Die Schätzung setzt vier Bytes pro Tiefenpixel an; Canvas-Backbuffer, Geometrie und Treiber-Overhead sind nicht enthalten. Sie ist keine Messung des gesamten VRAM.
 
 Diagnose in der Browserkonsole:
 
 ```js
-cinema.getStats();       // Contexts, running scenes, frames and applied visual values
+cinema.getStats();       // Contexts, scenes, slots, estimated target bytes and visual values
 CryoScenes.built();      // Successfully built canvas IDs
 CryoScenes.failed();     // Failed canvas IDs
 ```

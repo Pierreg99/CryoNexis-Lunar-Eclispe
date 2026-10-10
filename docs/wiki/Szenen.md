@@ -21,15 +21,17 @@ Eis nutzt Fraktalrauschen, Adern, Randlicht und einen Frostparameter. Kristallin
 
 ```mermaid
 flowchart LR
-    A["Lineares Render-Target"] --> B["Bright-Pass"]
-    B --> C["Gaussian horizontal"]
-    C --> D["Gaussian vertikal"]
+    A["Lineares Render-Target"] --> B["Bright-Pass · Bloom A · ¼ Breite/Höhe"]
+    B --> C["Gaussian horizontal · Bloom B"]
+    C --> D["Gaussian vertikal · zurück nach Bloom A"]
     A --> E["Composite"]
     D --> E
     E --> F["ACES · Bloom · Farbversatz · Filmkorn · Vignette · Scanlines"]
 ```
 
-Der Renderer verwendet `NoToneMapping`; ACES gehört in den Composite. Render-Targets verwenden Half-Float, wenn unterstützt, sonst einen kompatiblen 8-Bit-Pfad. Radiale chromatische Aberration bleibt im Bildzentrum null. Die Engine begrenzt Auflösung und reduziert bei dauerhaft langen Frames die Render-Skalierung.
+Der Renderer verwendet `NoToneMapping`; ACES gehört in den Composite. Render-Targets verwenden Half-Float, wenn unterstützt, sonst einen kompatiblen 8-Bit-Pfad. Zwei permanente Bloom-Targets reichen für Bright-Pass und beide Blur-Richtungen: 1/16 der Szenenpixel je Bloom-Target. Pro Frame werden keine neuen Targets erzeugt oder geklont. ACES, Bloom, Farbversatz, Filmkorn, Vignette und Scanlines bleiben in einem gemeinsamen Composite-Pass. Radiale chromatische Aberration bleibt im Bildzentrum null. Die Engine begrenzt Auflösung und reduziert bei dauerhaft langen Frames die Render-Skalierung.
+
+GPU-Ressourcen ausgeblendeter Szenen werden freigegeben; ihre CPU-Objekte bleiben gecacht. Unbenutzte Renderer-Slots geben große Framebuffer frei. Auf der nächsten sichtbaren Szene oder beim Zurückscrollen werden die vorhandenen Objekte erneut hochgeladen. Details und Speichergrenzen: [Renderer-Lebenszyklus](Architektur.md#renderer-und-lebenszyklus).
 
 ## Audio-Reaktion
 

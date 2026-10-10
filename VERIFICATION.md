@@ -1,10 +1,10 @@
 # Prüfung · CRYONEXUS
 
-Geprüft am 10. Oktober 2026 mit Chromium 151.0.7922.173 in der verwalteten Linux-Umgebung. Der vollständige Aufruf `npm test` hat mit Exit-Code 0 abgeschlossen: zehn reine Modell-Testgruppen und zehn HTTP-Browserdurchläufe über acht Suites bestanden, einschließlich nativer Vertex-Arrays und verzögertem Grafikdownload. Zwei `file://`-Durchläufe sind ausdrücklich durch die Browser-Richtlinie blockiert. Alle ausgelieferten JavaScript-Dateien bestehen zusätzlich die Syntaxprüfung.
+Geprüft am 10. Oktober 2026 mit Chromium 151.0.7922.173 in der verwalteten Linux-Umgebung. Der vollständige Aufruf `npm test` hat mit Exit-Code 0 abgeschlossen: zehn reine Modell-Testgruppen und zehn HTTP-Browserdurchläufe über acht Suites bestanden, einschließlich nativer Vertex-Arrays und verzögertem Grafikdownload. Zwei `file://`-Durchläufe sind ausdrücklich durch die Browser-Richtlinie blockiert. Alle ausgelieferten JavaScript-Dateien bestehen zusätzlich die Syntaxprüfung. Nach Ergänzung der Inhaltsversionen bestanden außerdem drei fokussierte HTTP-Durchläufe für UI-Start, reduzierte Bewegung und Boot-Fail-Safe; dabei wurde ein weiterer Datei-URL-Versuch als blockiert protokolliert.
 
 | Prüfung | Ergebnis |
 | --- | --- |
-| Vollständige lokale Auslieferung | 8 Laufzeitdateien, insgesamt 742.935 Bytes; unter 1,2 MB |
+| Vollständige lokale Auslieferung | 8 Laufzeitdateien, insgesamt 742.968 Bytes; unter 1,2 MB |
 | Projektstruktur | 32 versionierte Quelldateien auf `main` einschließlich README, Wiki, Wiki-Skript und Pages-Workflow; vier getrennte Schichten: Modell, Oberfläche, Szenen, Engine |
 | Skriptreihenfolge und CSS-Struktur | Cinema → Simulation → App (`defer`); Three.js → Szenen nach UI-Paint/Idle; 20 nummerierte CSS-Blöcke |
 | Desktop und Mobilgerät | Alle sechs Sektionen und Interaktionen geprüft; kein horizontaler Überlauf |
@@ -28,6 +28,7 @@ Geprüft am 10. Oktober 2026 mit Chromium 151.0.7922.173 in der verwalteten Linu
 | Reduzierte Bewegung | Kaltstart ohne Three.js-/Szenen-Downloads: null WebGL, null angeforderte Animationsframes, null CSS-Animationen; Live-Wechsel stoppt auch verzögerte Reveal-Übergänge |
 | Kontextverlust | Getrennte Wiederherstellung beider Kontexte ohne neue Kontexte oder Szenen-Neubau; Terminal bleibt nutzbar |
 | UI-Ladepfad | Nur 78.197 Bytes JavaScript vor UI-Bereitschaft; 632.861 Bytes Grafikcode werden nachgeladen (89 % vom Startpfad entfernt); die künstliche 2,4-Sekunden-Sequenz entfällt |
+| Browser-Cache | Die drei Startskripte besitzen geprüfte SHA-256-Inhaltsversionen in ihrer URL; neue Inhalte erhalten neue URLs, unveränderte Skripte behalten ihre Cache-URL |
 | Verspätete Grafik | Angehaltener Three.js-Download blockiert weder Simulation noch Phasenwahl; spätere Szenen erhalten die vorab gewählte Phase |
 | Grafikfehler | Ergänzender HTTP-503-Test: Ersatzstatus, sechs Knoten, Pause und Einzelschritt bleiben nutzbar; keine JavaScript-Ausnahme |
 | Boot-Fail-Safe | Unabhängiger 4.200-ms-Timer läuft ohne Intervalle nach 4.200,5 ms; normaler Start schließt das Overlay bereits bei UI-Bereitschaft |
@@ -47,7 +48,7 @@ Das Veröffentlichungsskript meldet die noch fehlende Wiki-Initialisierung ausdr
 
 ## GitHub Pages
 
-Die vollständige App ist unter [pierreg99.github.io/CryoNexis-Lunar-Eclispe](https://pierreg99.github.io/CryoNexis-Lunar-Eclispe/) veröffentlicht. Der vorherige [Actions-Deploy der optimierten Engine](https://github.com/Pierreg99/CryoNexis-Lunar-Eclispe/actions/runs/38060361512) hat erfolgreich abgeschlossen. Die Auslieferung enthält alle acht Laufzeitdateien aus `main/dist/`: insgesamt 742.935 Bytes einschließlich Three.js-Lizenz.
+Die vollständige App ist unter [pierreg99.github.io/CryoNexis-Lunar-Eclispe](https://pierreg99.github.io/CryoNexis-Lunar-Eclispe/) veröffentlicht. Der vorherige [Actions-Deploy der optimierten Engine](https://github.com/Pierreg99/CryoNexis-Lunar-Eclispe/actions/runs/38060361512) hat erfolgreich abgeschlossen. Die Auslieferung enthält alle acht Laufzeitdateien aus `main/dist/`: insgesamt 742.968 Bytes einschließlich Three.js-Lizenz.
 
 Die aktuelle Pages-Konfiguration verwendet GitHub Actions. Der [Workflow](.github/workflows/pages.yml) liefert `dist/` direkt aus `main` aus und wurde erfolgreich mit dieser Konfiguration ausgeführt. App- und Workflow-Änderungen starten automatisch einen Deploy; `workflow_dispatch` erlaubt eine manuelle Veröffentlichung. Das frühere Skript für die Branch-Veröffentlichung wurde entfernt. Anleitung: [Hosting](docs/wiki/Hosting-und-Wiki.md#app-aktualisieren).
 

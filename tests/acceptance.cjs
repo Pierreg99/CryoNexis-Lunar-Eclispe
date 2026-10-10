@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const http = require('node:http');
+const { createHash } = require('node:crypto');
 const { pathToFileURL } = require('node:url');
 const { chromium } = require('playwright');
 
@@ -33,7 +34,12 @@ async function staticAcceptance() {
   await Promise.all(expected.map(file => fs.access(path.join(dist, file))));
   const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
   const scripts = Array.from(html.matchAll(/<script\s+src="([^"]+)"/g), match => match[1]);
-  assert.deepEqual(scripts, ['assets/vendor/cinema_engine.js', 'assets/js/simulation.js', 'assets/js/app.js']);
+  assert.deepEqual(scripts.map(source => source.split('?')[0]), ['assets/vendor/cinema_engine.js', 'assets/js/simulation.js', 'assets/js/app.js']);
+  for (const source of scripts) {
+    const url = new URL(source, 'http://localhost/');
+    const digest = createHash('sha256').update(await fs.readFile(path.join(dist, url.pathname))).digest('hex').slice(0, 8);
+    assert.equal(url.searchParams.get('v'), digest, 'Changed critical scripts must have a new cache URL');
+  }
   assert.equal((html.match(/<script[^>]+ defer>/g) || []).length, 3, 'Critical scripts must not block HTML parsing');
   assert.match(html, /<html lang="de"/);
   const css = await fs.readFile(path.join(dist, 'assets/css/main.css'), 'utf8');

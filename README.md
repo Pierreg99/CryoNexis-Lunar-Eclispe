@@ -10,7 +10,7 @@ Eine deutschsprachige, prozedurale 3D-Erfahrung zwischen Eis, Finsternis und Sch
 
 | Erlebnis | Architektur | Auslieferung | Prüfung |
 | --- | --- | --- | --- |
-| 6 prozedurale Szenen | 4 getrennte Schichten | 742.935 Bytes in `dist/` | 10 Modell-Testgruppen + 10 Browserdurchläufe bestanden |
+| 6 prozedurale Szenen | 4 getrennte Schichten | 742.968 Bytes in `dist/` | 10 Modell-Testgruppen + 10 Browserdurchläufe bestanden |
 
 ## In einer Minute starten
 

@@ -47,7 +47,7 @@
   function material(fragment, uniforms) { return new T.ShaderMaterial({ vertexShader: quadVertex, fragmentShader: fragment, uniforms, depthTest: false, depthWrite: false }); }
   function createSlot() {
     // This is the only WebGLRenderer allocation site; slots never exceed two.
-    const renderer = new T.WebGLRenderer({ alpha: false, antialias: false, powerPreference: 'low-power' });
+    const renderer = new T.WebGLRenderer({ alpha: false, antialias: false, depth: false, stencil: false, powerPreference: 'low-power' });
     renderer.toneMapping = T.NoToneMapping;
     renderer.outputEncoding = T.LinearEncoding;
     renderer.setPixelRatio(1);
@@ -56,23 +56,24 @@
     const type = renderer.capabilities.isWebGL2 && renderer.extensions.has('EXT_color_buffer_float') ? T.HalfFloatType : T.UnsignedByteType;
     const target = () => new T.WebGLRenderTarget(1, 1, { type, depthBuffer: false, stencilBuffer: false });
     const main = target(); main.depthBuffer = true;
-    const bright = target(), horizontal = target(), vertical = target();
+    // Two quarter-resolution bloom targets alternate; no temporary targets per frame.
+    const bright = target(), horizontal = target();
     const postScene = new T.Scene(), postCamera = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     const brightMat = material(shaders.bright, { source: { value: main.texture } });
     const blurMat = material(shaders.blur, { source: { value: bright.texture }, direction: { value: new T.Vector2() } });
-    const compositeMat = material(shaders.composite, { source: { value: main.texture }, bloom: { value: vertical.texture }, time: { value: 0 }, height: { value: 1 } });
+    const compositeMat = material(shaders.composite, { source: { value: main.texture }, bloom: { value: bright.texture }, time: { value: 0 }, height: { value: 1 } });
     const quad = new T.Mesh(new T.PlaneGeometry(2, 2), brightMat); postScene.add(quad);
-    const slot = { renderer, main, bright, horizontal, vertical, postScene, postCamera, quad, brightMat, blurMat, compositeMat, owner: null, lost: false, width: 0, height: 0, scale: 1, slow: 0 };
+    const slot = { renderer, main, bright, horizontal, postScene, postCamera, quad, brightMat, blurMat, compositeMat, owner: null, lost: false, width: 0, height: 0, scale: 1, slow: 0 };
     surface.addEventListener('webglcontextlost', event => { event.preventDefault(); slot.lost = true; reconcile(); document.dispatchEvent(new CustomEvent('cryonexus:graphics', { detail: 'fallback' })); });
     surface.addEventListener('webglcontextrestored', () => {
       // Lost GPU handles are already destroyed. Fresh targets avoid invoking old
       // dispose listeners against the restored context generation.
       slot.main = target(); slot.main.depthBuffer = true;
-      slot.bright = target(); slot.horizontal = target(); slot.vertical = target();
+      slot.bright = target(); slot.horizontal = target();
       slot.brightMat.uniforms.source.value = slot.main.texture;
       slot.blurMat.uniforms.source.value = slot.bright.texture;
       slot.compositeMat.uniforms.source.value = slot.main.texture;
-      slot.compositeMat.uniforms.bloom.value = slot.vertical.texture;
+      slot.compositeMat.uniforms.bloom.value = slot.bright.texture;
       slot.lost = false; slot.width = 0; reconcile();
     });
     slots.push(slot); return slot;
@@ -89,17 +90,40 @@
   }
   function release(instance) {
     cancelAnimationFrame(instance.raf); instance.raf = 0; instance.running = false;
-    if (instance.slot) { instance.slot.owner = null; instance.slot.renderer.domElement.remove(); instance.slot = null; }
+    if (instance.slot) {
+      // Keep CPU scene objects, but release their uploaded buffers and programs.
+      // Three.js uploads the same geometry and instancing data on the next visit.
+      if (instance.resident) {
+        const geometries = new Set(), materials = new Set();
+        instance.scene.traverse(object => {
+          if (object.geometry) geometries.add(object.geometry);
+          if (object.material) (Array.isArray(object.material) ? object.material : [object.material]).forEach(value => materials.add(value));
+          if (object.isInstancedMesh) object.dispose();
+        });
+        geometries.forEach(value => value.dispose()); materials.forEach(value => value.dispose());
+        instance.resident = false;
+      }
+      instance.slot.renderer.renderLists.dispose();
+      instance.slot.owner = null; instance.slot.renderer.domElement.remove(); instance.slot = null;
+    }
+  }
+  function trimSlot(slot) {
+    if (slot.owner || slot.lost || !slot.width) return;
+    // Release framebuffer storage after reassignment, preserving the two contexts.
+    slot.renderer.setRenderTarget(null);
+    slot.main.setSize(1, 1); slot.bright.setSize(1, 1); slot.horizontal.setSize(1, 1);
+    slot.renderer.setSize(1, 1, false);
+    slot.width = 0; slot.height = 0;
   }
   function resize(instance, slot, rect) {
     // A shared scale preserves aspect ratio and caps full-screen shader fill rate.
     const ratio = Math.min(devicePixelRatio || 1, 1.5, 1600 / rect.width, 1300 / rect.height, Math.sqrt(950000 / (rect.width * rect.height))) * slot.scale;
-    const width = Math.max(1, Math.round(rect.width * ratio));
-    const height = Math.max(1, Math.round(rect.height * ratio));
+    const width = Math.max(1, Math.floor(rect.width * ratio));
+    const height = Math.max(1, Math.floor(rect.height * ratio));
     if (slot.width === width && slot.height === height) return;
     slot.width = width; slot.height = height;
     slot.renderer.setSize(width, height, false); slot.main.setSize(width, height);
-    [slot.bright, slot.horizontal, slot.vertical].forEach(target => target.setSize(Math.max(1, width >> 1), Math.max(1, height >> 1)));
+    [slot.bright, slot.horizontal].forEach(target => target.setSize(Math.max(1, width >> 2), Math.max(1, height >> 2)));
     slot.compositeMat.uniforms.height.value = height;
     instance.camera.aspect = rect.width / rect.height; instance.camera.updateProjectionMatrix();
   }
@@ -118,11 +142,11 @@
       resize(instance, slot, rect);
       instance.update({ T, scene: instance.scene, camera: instance.camera, refs: instance.refs, t: instance.time, dt, audio: bands(instance.time), phase: selectedPhase, simulation });
       renderer.setClearColor(instance.clear, 1);
-      renderer.setRenderTarget(slot.main); renderer.render(instance.scene, instance.camera);
+      renderer.setRenderTarget(slot.main); instance.resident = true; renderer.render(instance.scene, instance.camera);
       const pass = (mat, target) => { slot.quad.material = mat; renderer.setRenderTarget(target); renderer.render(slot.postScene, slot.postCamera); };
       pass(slot.brightMat, slot.bright);
       slot.blurMat.uniforms.source.value = slot.bright.texture; slot.blurMat.uniforms.direction.value.set(1 / slot.bright.width, 0); pass(slot.blurMat, slot.horizontal);
-      slot.blurMat.uniforms.source.value = slot.horizontal.texture; slot.blurMat.uniforms.direction.value.set(0, 1 / slot.bright.height); pass(slot.blurMat, slot.vertical);
+      slot.blurMat.uniforms.source.value = slot.horizontal.texture; slot.blurMat.uniforms.direction.value.set(0, 1 / slot.bright.height); pass(slot.blurMat, slot.bright);
       slot.compositeMat.uniforms.time.value = instance.time; pass(slot.compositeMat, null);
       instance.frames++;
       // Reduce fill rate under sustained pressure without changing simulation counts.
@@ -143,6 +167,7 @@
         slot.width = 0; i.running = true; i.last = performance.now(); i.raf = requestAnimationFrame(time => draw(i, time));
       } catch (_) { i.failed = true; document.dispatchEvent(new CustomEvent('cryonexus:graphics', { detail: 'fallback' })); }
     });
+    slots.forEach(trimSlot);
   }
   const visibility = new IntersectionObserver(entries => {
     entries.forEach(entry => { const i = instances.find(item => item.section === entry.target); if (i) { i.visible = entry.isIntersecting && entry.intersectionRatio > 0; i.ratio = entry.intersectionRatio; } }); reconcile();
@@ -151,7 +176,7 @@
     if (!T) throw new Error('Three.js unavailable');
     const scene = new T.Scene(), camera = new T.PerspectiveCamera(opts.fov || 48, 1, .1, 150);
     camera.position.set(...(opts.camPos || [0, 0, 12])); camera.lookAt(...(opts.lookAt || [0, 0, 0]));
-    const instance = { canvas, section: canvas.closest('section'), scene, camera, refs: {}, update: onUpdate, clear: opts.clear || 0x03060d, visible: false, ratio: 0, paused: false, failed: false, running: false, slot: null, raf: 0, last: 0, time: 0, frames: 0 };
+    const instance = { canvas, section: canvas.closest('section'), scene, camera, refs: {}, update: onUpdate, clear: opts.clear || 0x03060d, visible: false, ratio: 0, paused: false, failed: false, running: false, resident: false, slot: null, raf: 0, last: 0, time: 0, frames: 0 };
     // Renderer access is deferred: building offscreen must not allocate a context.
     const renderer = new Proxy({}, { get: (_, key) => { const active = instance.slot?.renderer; const value = active?.[key]; return typeof value === 'function' ? value.bind(active) : value; } });
     instance.refs = onBuild({ T, scene, camera, renderer }) || {};
@@ -184,5 +209,23 @@
       selectedPhase = Math.max(0, Math.min(4, event.detail.index)); simulation.phase = selectedPhase;
     }
   });
-  window.cinema = { boot, setAudio, getStats: () => ({ contexts: slots.length, running: instances.filter(i => i.running).length, simulation, scenes: instances.map(i => ({ id: i.canvas.id, running: i.running, frames: i.frames, failed: i.failed, visual: i.refs.visual || null })) }) };
+  function memoryStats(slot) {
+    const targets = [slot.main, slot.bright, slot.horizontal];
+    const allocated = !slot.lost && slot.width > 0;
+    // Conservative target-storage estimate; excludes geometry and driver overhead.
+    const targetBytes = allocated ? targets.reduce((sum, target) => sum + target.width * target.height *
+      (target.texture.type === T.HalfFloatType ? 8 : 4) + (target.depthBuffer ? target.width * target.height * 4 : 0), 0) : 0;
+    return { owner: slot.owner?.canvas.id || null, lost: slot.lost, targetBytes,
+      width: slot.renderer.domElement.width, height: slot.renderer.domElement.height,
+      targets: targets.map(target => ({ width: target.width, height: target.height, depth: target.depthBuffer })),
+      geometries: slot.lost ? 0 : slot.renderer.info.memory.geometries,
+      textures: slot.lost ? 0 : slot.renderer.info.memory.textures,
+      programs: slot.lost ? 0 : slot.renderer.info.programs.length };
+  }
+  window.cinema = { boot, setAudio, getStats: () => {
+    const memory = slots.map(memoryStats);
+    return { contexts: slots.length, running: instances.filter(i => i.running).length, simulation,
+      renderTargetBytes: memory.reduce((sum, slot) => sum + slot.targetBytes, 0), slots: memory,
+      scenes: instances.map(i => ({ id: i.canvas.id, running: i.running, resident: i.resident, frames: i.frames, failed: i.failed, visual: i.refs.visual || null })) };
+  } };
 })();

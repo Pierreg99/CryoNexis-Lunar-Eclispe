@@ -492,7 +492,7 @@
     lastFrame = now;
     frameCount += 1;
     if (now - fpsStart >= 1000) {
-      if (fps) fps.textContent = String(Math.round(frameCount * 1000 / (now - fpsStart)));
+      if (fps) fps.textContent = (frameCount * 1000 / (now - fpsStart)).toFixed(1);
       fpsStart = now;
       frameCount = 0;
     }

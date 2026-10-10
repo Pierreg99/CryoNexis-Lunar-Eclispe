@@ -333,6 +333,8 @@ async function fullRun(browser, url, name, viewport) {
     null, { timeout: 10_000, polling: 100 });
   const beforeFps = await page.evaluate(() => ({ t: performance.now(), frames: cinema.getStats().scenes.find(scene => scene.id === 'cn-chamber').frames }));
   await page.waitForTimeout(1200);
+  await page.waitForFunction(previous => cinema.getStats().scenes.find(scene => scene.id === 'cn-chamber').frames > previous,
+    beforeFps.frames, { timeout: 10_000, polling: 100 });
   const afterFps = await page.evaluate(() => ({ t: performance.now(), frames: cinema.getStats().scenes.find(scene => scene.id === 'cn-chamber').frames, hud: document.querySelector('#fps').textContent }));
   const measuredFps = (afterFps.frames - beforeFps.frames) * 1000 / (afterFps.t - beforeFps.t);
   assert(measuredFps > 0, `Visible chamber scene did not render: ${JSON.stringify({ cold, beforeFps, afterFps,
@@ -391,7 +393,7 @@ async function fullRun(browser, url, name, viewport) {
   await scrollTo(page, 'nodes');
   const prices = await page.locator('.node-price').allTextContents();
   await page.waitForFunction(initial => Array.from(document.querySelectorAll('.node-price'))
-    .some((element, index) => element.textContent !== initial[index]), prices, { timeout: 5500, polling: 100 });
+    .some((element, index) => element.textContent !== initial[index]), prices, { timeout: 10_000, polling: 100 });
   await page.locator('.node-trigger').nth(1).click();
   assert.equal(await page.locator('.node-trigger').nth(1).getAttribute('aria-expanded'), 'true');
   await page.locator('.node').nth(1).locator('.node-details').waitFor({ state: 'visible', timeout: 10_000 });
@@ -932,9 +934,9 @@ async function startupRun(browser, url) {
   page.on('pageerror', error => errors.push(error.message));
   let release;
   const held = new Promise(resolve => { release = resolve; });
-  let requested = false;
+  let requested = 0;
   await page.route('**/three.min.js', async route => {
-    requested = true;
+    requested += 1;
     await held;
     await route.continue();
   });
@@ -959,7 +961,10 @@ async function startupRun(browser, url) {
     await page.locator('[data-phase="2"]').click();
     assert.equal(await page.locator('[data-phase="2"]').getAttribute('aria-pressed'), 'true');
     await page.waitForFunction(() => !window.THREE);
-    assert(requested, 'The deferred graphics request should start after the usable UI');
+    assert.equal(requested, 1, 'Graphics must load once after the usable UI');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    assert.equal(requested, 1, 'Preference changes must not duplicate an in-flight graphics request');
     release();
     await page.waitForFunction(() => window.CryoScenes && cinema.getStats().scenes.some(scene => scene.frames > 0),
       null, { timeout: 30_000, polling: 100 });

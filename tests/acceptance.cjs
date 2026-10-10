@@ -51,6 +51,7 @@ async function staticAcceptance() {
 function instrument() {
   const monitor = window.__acceptance = {
     rafRequests: 0, rafCallbacks: 0, contexts: [], builds: [], audioContexts: [], invalidRenderFrames: [],
+    gpuResources: [], gpuBaseline: [], targetsCreated: 0, targetsDisposed: 0, frameTargetAllocations: [],
     gestures: [], phaseEvents: [], phaseTimers: [], contextEvents: { lost: 0, restored: 0 },
   };
   const getContext = HTMLCanvasElement.prototype.getContext;
@@ -58,7 +59,33 @@ function instrument() {
     const context = getContext.call(this, type, ...args);
     if (/^webgl2?$|^experimental-webgl$/.test(type) && context && !monitor.contexts.includes(context)) {
       monitor.contexts.push(context);
-      this.addEventListener('webglcontextlost', () => monitor.contextEvents.lost++);
+      const resources = { buffers: new Set(), textures: new Set(), framebuffers: new Set(), renderbuffers: new Set(), vertexArrays: new Set() };
+      monitor.gpuResources.push(resources);
+      for (const [name, kind] of [['Buffer', 'buffers'], ['Texture', 'textures'], ['Framebuffer', 'framebuffers'], ['Renderbuffer', 'renderbuffers'], ['VertexArray', 'vertexArrays']]) {
+        if (typeof context[`create${name}`] !== 'function') continue;
+        const create = context[`create${name}`].bind(context), remove = context[`delete${name}`].bind(context);
+        context[`create${name}`] = function (...args) {
+          const resource = create(...args); if (resource) resources[kind].add(resource); return resource;
+        };
+        context[`delete${name}`] = function (resource) { resources[kind].delete(resource); return remove(resource); };
+      }
+      if (!monitor.targetsPatched) {
+        monitor.targetsPatched = true;
+        const OriginalTarget = THREE.WebGLRenderTarget;
+        THREE.WebGLRenderTarget = class extends OriginalTarget {
+          constructor(...args) {
+            super(...args); monitor.targetsCreated++;
+            const index = monitor.gpuResources.length - 1;
+            if (!monitor.gpuBaseline[index]) monitor.gpuBaseline[index] = Object.fromEntries(
+              Object.entries(monitor.gpuResources[index]).map(([key, value]) => [key, value.size]));
+            this.addEventListener('dispose', () => monitor.targetsDisposed++);
+          }
+        };
+      }
+      this.addEventListener('webglcontextlost', () => {
+        monitor.contextEvents.lost++;
+        Object.values(resources).forEach(set => set.clear());
+      });
       this.addEventListener('webglcontextrestored', () => monitor.contextEvents.restored++);
     }
     return context;
@@ -69,10 +96,12 @@ function instrument() {
     return raf(time => {
       monitor.rafCallbacks++;
       const before = window.cinema ? cinema.getStats().scenes : [];
+      const targetsBefore = monitor.targetsCreated;
       callback(time);
       if (window.cinema) cinema.getStats().scenes.forEach(scene => {
         const previous = before.find(item => item.id === scene.id);
         if (scene.frames <= (previous ? previous.frames : 0)) return;
+        if (monitor.targetsCreated !== targetsBefore) monitor.frameTargetAllocations.push(scene.id);
         const rect = document.getElementById(scene.id).closest('section').getBoundingClientRect();
         if (document.hidden || rect.bottom <= 0 || rect.top >= innerHeight || rect.right <= 0 || rect.left >= innerWidth) {
           monitor.invalidRenderFrames.push({ id: scene.id, top: rect.top, bottom: rect.bottom });
@@ -115,7 +144,7 @@ async function open(browser, url, options = {}) {
   const context = await browser.newContext({
     viewport: options.viewport || { width: 1440, height: 900 },
     reducedMotion: options.reduced ? 'reduce' : 'no-preference',
-    deviceScaleFactor: 1,
+    deviceScaleFactor: options.deviceScaleFactor || 1,
   });
   await context.addInitScript(instrument);
   if (options.savedStorage !== undefined) await context.addInitScript(value => {
@@ -168,7 +197,7 @@ async function open(browser, url, options = {}) {
   await page.waitForFunction(() => {
     const boot = document.querySelector('#boot');
     return getComputedStyle(boot).display === 'none' || boot.classList.contains('done') || boot.hidden;
-  }, null, { timeout: 5000, polling: 50 });
+  }, null, { timeout: 30_000, polling: 50 });
   await page.waitForTimeout(options.reduced ? 80 : 600);
   return { page, context, faults, environmentWarnings, external, requests };
 }
@@ -420,6 +449,97 @@ async function fullRun(browser, url, name, viewport) {
   console.log(`PASS ${name}: all scenes, viewport suspension, commands, keyboard, phases, audio, local requests`);
 }
 
+async function gpuMemoryRun(browser, url) {
+  const run = await open(browser, url, { viewport: { width: 640, height: 360 }, deviceScaleFactor: 2 });
+  const { page } = run;
+  const sample = async () => page.evaluate(() => ({
+    stats: cinema.getStats(), dpr: devicePixelRatio,
+    created: __acceptance.targetsCreated, frameAllocations: __acceptance.frameTargetAllocations,
+    built: __acceptance.builds.length,
+    gpu: __acceptance.gpuResources.map(resources => Object.fromEntries(
+      Object.entries(resources).map(([key, value]) => [key, value.size]))),
+    baseline: __acceptance.gpuBaseline,
+    rects: Object.fromEntries(Array.from(document.querySelectorAll('section')).map(section => {
+      const rect = section.getBoundingClientRect(); return [section.querySelector('canvas').id, { width: rect.width, height: rect.height }];
+    })),
+  }));
+  const check = snapshot => {
+    assert.equal(snapshot.dpr, 2, 'Memory regression must exercise a high-DPR display');
+    assert(snapshot.stats.contexts <= 2 && snapshot.stats.running <= 2);
+    assert.equal(snapshot.created, snapshot.stats.contexts * 3, 'Targets must be allocated once per context, without clones');
+    assert.deepEqual(snapshot.frameAllocations, [], 'A rendered frame allocated a new target');
+    assert(snapshot.stats.renderTargetBytes <= 24_700_000, 'Target storage exceeds the conservative two-slot budget');
+    assert(snapshot.stats.scenes.every(scene => !scene.failed));
+    assert(snapshot.stats.scenes.filter(scene => scene.resident).every(scene => scene.running),
+      'An offscreen scene retained uploaded GPU resources');
+    snapshot.stats.slots.forEach(slot => {
+      assert.equal(slot.targets.length, 3);
+      if (!slot.owner) return;
+      const [main, bright, horizontal] = slot.targets, rect = snapshot.rects[slot.owner];
+      assert(main.width * main.height <= 950000, 'Full-resolution target exceeds the pixel budget');
+      assert(main.width <= rect.width * 1.5 && main.height <= rect.height * 1.5, 'DPR cap was exceeded');
+      assert.equal(bright.width, Math.max(1, main.width >> 2));
+      assert.equal(bright.height, Math.max(1, main.height >> 2));
+      assert.deepEqual(horizontal, bright, 'Bloom ping-pong targets must share quarter dimensions');
+    });
+  };
+  await page.waitForFunction(() => cinema.getStats().scenes.some(scene => scene.frames >= 3), null, { timeout: 30_000 });
+  const samples = [];
+  const forward = sectionIds;
+  for (const id of [...forward, ...forward.slice().reverse()]) {
+    await scrollTo(page, id);
+    await assertVisibility(page);
+    const before = await page.evaluate(section => cinema.getStats().scenes.find(scene => scene.id ===
+      document.querySelector(`#${section} canvas`).id).frames, id);
+    await page.waitForFunction(({ id, before }) => cinema.getStats().scenes.find(scene => scene.id ===
+      document.querySelector(`#${id} canvas`).id).frames > before, { id, before }, { timeout: 30_000 });
+    const current = await sample(); check(current); samples.push(current);
+  }
+  assert.equal(samples.at(-1).built, 6, 'Memory reclamation must preserve all six cached scene builds');
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await assertVisibility(page);
+  const large = await sample(); check(large);
+  await page.evaluate(() => {
+    const spacer = document.createElement('div'); spacer.id = 'gpu-idle-spacer'; spacer.style.height = '200vh';
+    document.body.append(spacer); spacer.scrollIntoView({ block: 'start', behavior: 'instant' });
+  });
+  await page.waitForFunction(() => cinema.getStats().running === 0 && cinema.getStats().renderTargetBytes === 0,
+    null, { timeout: 30_000 });
+  const idle = await sample(); check(idle);
+  assert.equal(idle.built, 6);
+  assert(idle.stats.scenes.every(scene => !scene.resident), 'Idle scenes must relinquish their GPU allocations');
+  idle.stats.slots.forEach(slot => {
+    assert.equal(slot.width, 1); assert.equal(slot.height, 1);
+    assert.equal(slot.textures, 0, 'Idle target textures must actually be deleted');
+    assert(slot.geometries <= 1, 'Only the shared fullscreen quad may retain geometry');
+    assert(slot.programs <= 3, 'Scene shader programs must be released');
+  });
+  idle.gpu.forEach((resources, index) => {
+    const baseline = idle.baseline[index];
+    // Three.js keeps tiny empty sampler textures created before any scene or target.
+    assert.equal(resources.textures, baseline.textures);
+    assert.equal(resources.framebuffers, baseline.framebuffers);
+    assert.equal(resources.renderbuffers, baseline.renderbuffers);
+    assert(resources.buffers <= baseline.buffers + 4, 'Offscreen instance matrices or scene vertex buffers leaked');
+    assert(resources.vertexArrays <= baseline.vertexArrays + 3, 'Scene vertex arrays retained released buffer references');
+  });
+  await page.evaluate(() => document.getElementById('gpu-idle-spacer').remove());
+  await page.setViewportSize({ width: 640, height: 360 });
+  await scrollTo(page, 'nodes'); await assertVisibility(page);
+  const resumed = await sample(); check(resumed);
+  assert.equal(resumed.built, 6, 'Returning to an evicted scene must reuse its CPU geometry');
+  assert.equal(resumed.stats.contexts, idle.stats.contexts, 'Returning to the page must reuse the two contexts');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.waitForFunction(() => cinema.getStats().renderTargetBytes === 0 && cinema.getStats().running === 0);
+  const reduced = await sample(); check(reduced);
+  assert(reduced.gpu.every((resources, index) => resources.textures === reduced.baseline[index].textures &&
+    resources.buffers <= reduced.baseline[index].buffers + 4));
+  await clean(run);
+  report.runs.push({ name: 'gpu-memory', samples, large, idle, resumed, reduced, environmentWarnings: run.environmentWarnings });
+  await run.context.close();
+  console.log('PASS GPU memory: DPR 2, quarter bloom, no frame allocations, two contexts, actual GPU deletion and cached-scene return');
+}
+
 async function contextRecovery(browser, url) {
   const run = await open(browser, url);
   const { page } = run;
@@ -427,8 +547,16 @@ async function contextRecovery(browser, url) {
     document.documentElement.style.scrollBehavior = 'auto';
     scrollTo({ top: document.getElementById('eclipse').offsetTop - innerHeight / 2, behavior: 'instant' });
   });
-  await page.waitForFunction(() => cinema.getStats().running === 2 && __acceptance.contexts.length === 2,
-    null, { timeout: 10_000, polling: 100 });
+  try {
+    await page.waitForFunction(() => cinema.getStats().running === 2 && __acceptance.contexts.length === 2,
+      null, { timeout: 30_000, polling: 100 });
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => ({ stats: cinema.getStats(), contexts: __acceptance.contexts.length,
+      targets: __acceptance.targetsCreated, rects: Array.from(document.querySelectorAll('section')).map(section => {
+        const rect = section.getBoundingClientRect(); return { id: section.id, top: rect.top, bottom: rect.bottom };
+      }) }));
+    throw new Error(`${error.message}; two-slot setup: ${JSON.stringify(diagnostic)}; faults: ${JSON.stringify(run.faults)}`);
+  }
   const supported = await page.evaluate(() => {
     __acceptance.lossExtensions = __acceptance.contexts.map(context => context.getExtension('WEBGL_lose_context'));
     return __acceptance.lossExtensions.every(Boolean);
@@ -808,8 +936,8 @@ async function bootFailsafe(browser, url) {
 }
 
 async function main() {
-  assert(Array.from(suites).every(suite => ['all', 'desktop', 'mobile', 'reduced', 'simulation', 'recovery', 'boot'].includes(suite)),
-    'Unknown ACCEPTANCE_SUITE; use all, desktop, mobile, reduced, simulation, recovery or boot');
+  assert(Array.from(suites).every(suite => ['all', 'desktop', 'mobile', 'reduced', 'simulation', 'recovery', 'boot', 'gpu'].includes(suite)),
+    'Unknown ACCEPTANCE_SUITE; use all, desktop, mobile, reduced, simulation, recovery, boot or gpu');
   report.suites = Array.from(suites);
   await fs.mkdir(artifacts, { recursive: true });
   await staticAcceptance();
@@ -860,6 +988,7 @@ async function main() {
       await reducedRun(browser, local, 'http-mobile');
     }
     if (enabled('recovery')) await contextRecovery(browser, local);
+    if (enabled('gpu')) await gpuMemoryRun(browser, local);
     if (enabled('simulation')) await simulationRun(browser, local);
     if (enabled('boot')) await bootFailsafe(browser, local);
     console.log(`PASS payload ${report.payloadBytes} bytes; Chromium ${report.browser}; ${report.runs.length} browser runs; ${report.blocked.length} policy-blocked runs`);

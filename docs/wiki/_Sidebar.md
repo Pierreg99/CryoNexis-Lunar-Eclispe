@@ -7,6 +7,7 @@
 - [Schnellstart](Schnellstart.md)
 - [Bedienung](Bedienung.md)
 - [Terminal](Terminal.md)
+- [Forschung und Fähigkeiten](Forschung.md)
 - [Regeln und Zahlen](Simulation.md)
 
 **Entwickeln**

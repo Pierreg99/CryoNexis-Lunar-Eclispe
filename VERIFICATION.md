@@ -1,8 +1,14 @@
 # Prüfung · CRYONEXUS
 
+## Forschungsfähigkeiten · 11. Oktober 2026
+
+Aktueller Umfang: **42 Projektdateien**, davon **14 Laufzeitdateien mit 782.279 Bytes** und 104.259 Bytes Start-JavaScript. Vier Forschungsdateien werden zusätzlich erst nach Zugang beziehungsweise Nachweisen angefordert; geänderte Szenen und Forschungsmodule tragen Inhaltsversionen in ihren URLs. `unlock cryo` und `cryo unlock` starten dieselbe Freischaltung. 27 Terminalbefehle unterstützen Hilfe und Ergebnisbelege.
+
+Zehn Modell-, fünf Terminal- und drei Forschungs-Testgruppen prüfen Voraussetzungen, eindeutige Nachweise, Fortschritt, Speicherkompatibilität, Ablauf, Reset und neue Befehle. Der fokussierte Forschungs-Browserlauf bestand den vollständigen Weg über alle drei Module, einen fehlgeschlagenen Download mit erfolgreicher Wiederholung, Neuladen, mobile Ansicht ohne horizontalen Überlauf und sichtbare Folgen in Finsternis, Nexus und Nebel bei höchstens zwei WebGL-Kontexten. Nach Ablauf bleibt das entschlüsselte Archiv lesbar; neue Aktionen sind gesperrt. Die mobile Archivansicht wurde zusätzlich visuell geprüft.
+
 ## CRYO-Freischaltung · 11. Oktober 2026
 
-Aktueller Umfang: **36 Projektdateien**, **10 Laufzeitdateien mit 761.814 Bytes**, davon 95.122 Bytes Start-JavaScript. Der Befehl `unlock cryo` ist bis zum 31.10.2026 einschließlich UTC aktivierbar. Die persistierte Freischaltung wird bei jeder Vault-Prüfung gegen die Gerätezeit geprüft; normale Zugangsbedingungen gelten nach Ablauf wieder. Alte Speicherstände bleiben kompatibel. Die Freischaltung erzeugt kein Guthaben.
+Umfang vor Forschungsfähigkeiten: **36 Projektdateien**, **10 Laufzeitdateien mit 761.814 Bytes**, davon 95.122 Bytes Start-JavaScript. Der Befehl `unlock cryo` ist bis zum 31.10.2026 einschließlich UTC aktivierbar. Die persistierte Freischaltung wird bei jeder Vault-Prüfung gegen die Gerätezeit geprüft; normale Zugangsbedingungen gelten nach Ablauf wieder. Alte Speicherstände bleiben kompatibel. Die Freischaltung erzeugt kein Guthaben.
 
 Zehn Modell- und fünf Terminal-Testgruppen bestanden einschließlich Speicherung, Guthabenlimits, Reset und der Grenze zwischen 31.10.2026 23:59:59.999 UTC und 01.11.2026 00:00 UTC.
 

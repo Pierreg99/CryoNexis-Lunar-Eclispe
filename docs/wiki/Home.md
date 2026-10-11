@@ -11,6 +11,7 @@ Hier wird aus einer visuellen Welt eine nachvollziehbare Simulation. Einstieg, Z
 | Die App starten und den ersten Vault öffnen | [Schnellstart](Schnellstart.md) |
 | Handeln, pausieren und Fortschritt behalten | [Bedienung](Bedienung.md) |
 | Die Zahlen und Phasen verstehen | [Simulation](Simulation.md) |
+| Fähigkeiten und neue Bereiche freischalten | [Forschung](Forschung.md) |
 | Das Terminal nutzen | [Terminal](Terminal.md) |
 | Den Code erweitern | [Architektur](Architektur.md) |
 | Die sechs Szenen und ihre Reaktionen verstehen | [Szenen](Szenen.md) |
@@ -29,7 +30,7 @@ Hier wird aus einer visuellen Welt eine nachvollziehbare Simulation. Einstieg, Z
 
 ## Stand und Grenzen
 
-Vier Schichten verbinden sechs prozedurale Szenen. Zehn Dateien in `dist/` belegen 761.814 Bytes. Terminal-Hilfe und Ergebnisbelege sind ein eigenes Modul; der Aufgabenstand folgt dem vorhandenen Simulationsmodell. Aktuelle Nachweise stehen im [Prüfbericht](../../VERIFICATION.md). Die App fordert keine externen Laufzeitressourcen an.
+Vier Schichten verbinden sechs prozedurale Szenen. Vierzehn Dateien in `dist/` belegen 782.279 Bytes. Terminal-Hilfe und Ergebnisbelege sind ein eigenes Modul; der Aufgabenstand folgt dem vorhandenen Simulationsmodell. Aktuelle Nachweise stehen im [Prüfbericht](../../VERIFICATION.md). Die App fordert keine externen Laufzeitressourcen an.
 
 Direkte Datei-URLs sind in der Testumgebung gesperrt. Die Zielrate von 60 FPS muss auf echten Geräten geprüft werden. Der vollständige [Prüfbericht](../../VERIFICATION.md) trennt bestandene Checks von offenen Nachweisen.
 

@@ -10,7 +10,7 @@ Eine deutschsprachige, prozedurale 3D-Erfahrung zwischen Eis, Finsternis und Sch
 
 | Erlebnis | Architektur | Auslieferung | Prüfung |
 | --- | --- | --- | --- |
-| 6 prozedurale Szenen | 4 getrennte Schichten | 761.814 Bytes in `dist/` | 10 Modell- und 5 Terminal-Testgruppen; gezielte Browserprüfungen bestanden |
+| 6 prozedurale Szenen | 4 getrennte Schichten | 782.279 Bytes in `dist/` | 10 Modell-, 5 Terminal- und 3 Forschungs-Testgruppen; gezielte Browserprüfungen bestanden |
 
 ## In einer Minute starten
 
@@ -61,7 +61,7 @@ flowchart LR
     S -->|vorhandene Geometrie| E
 ```
 
-Die Oberfläche enthält keine 3D-Geometrie. Das Modell kennt weder DOM noch Speicher. Die Engine besitzt höchstens zwei WebGL-Kontexte und rendert ausschließlich sichtbare Szenen. GPU-Daten ausgeblendeter Szenen und große Puffer freier Slots werden freigegeben; CPU-Szenen bleiben gecacht. Viertelauflösender Bloom verwendet zwei permanente Targets ohne Allokationen pro Frame. Die Oberfläche startet mit 95.122 Bytes JavaScript; Three.js und Szenen (632.861 Bytes) laden nach dem ersten UI-Paint nach. Die frühere künstliche 2,4-Sekunden-Boot-Sequenz entfällt. Bei reduzierter Bewegung werden die Grafikskripte erst nach Aktivierung der Bewegung geladen. Alle Skripte laden klassisch und lokal, ohne Bundler oder ES-Modulimporte.
+Die Oberfläche enthält keine 3D-Geometrie. Das Modell kennt weder DOM noch Speicher. Die Engine besitzt höchstens zwei WebGL-Kontexte und rendert ausschließlich sichtbare Szenen. GPU-Daten ausgeblendeter Szenen und große Puffer freier Slots werden freigegeben; CPU-Szenen bleiben gecacht. Viertelauflösender Bloom verwendet zwei permanente Targets ohne Allokationen pro Frame. Die Oberfläche startet mit 104.259 Bytes JavaScript; Three.js und Szenen (633.171 Bytes) laden nach dem ersten UI-Paint nach. Die frühere künstliche 2,4-Sekunden-Boot-Sequenz entfällt. Bei reduzierter Bewegung werden die Grafikskripte erst nach Aktivierung der Bewegung geladen. Alle Skripte laden klassisch und lokal, ohne Bundler oder ES-Modulimporte.
 
 **[Modulverträge →](docs/wiki/Architektur.md) · [Szenen und Shader →](docs/wiki/Szenen.md) · [Farben und Gestaltung →](docs/wiki/Designsystem.md)**
 
@@ -81,7 +81,7 @@ Die Terminal-Erweiterung besteht zusätzlich vier reine Terminal-Testgruppen sow
 
 Das [Handbuch](docs/wiki/Home.md) führt vom ersten Vault bis zu Formeln, Modulverträgen und Veröffentlichung. Seine Markdown-Seiten liegen versioniert in `docs/wiki/`; Sidebar und Footer sind für das GitHub-Wiki vorbereitet. Das Wiki ist auf GitHub aktiviert, sein separates Git-Repository ist noch nicht initialisiert. Das [Veröffentlichungsskript](scripts/publish-wiki.py) exportiert und synchronisiert die Seiten, sobald eine erste Wiki-Seite angelegt wurde.
 
-Die vollständige App ist auf **[GitHub Pages](https://pierreg99.github.io/CryoNexis-Lunar-Eclispe/)** veröffentlicht. Der [Pages-Workflow](.github/workflows/pages.yml) liefert alle zehn Laufzeitdateien unverändert aus `main/dist/` aus. Änderungen an der App auf `main` werden automatisch veröffentlicht; eine manuelle Veröffentlichung ist über „Run workflow“ möglich. GitHub Pages ist für öffentliche Repositories innerhalb der geltenden GitHub-Limits kostenlos; die App benötigt keine zusätzlichen Dienste. [Hosting und Wiki veröffentlichen →](docs/wiki/Hosting-und-Wiki.md)
+Die vollständige App ist auf **[GitHub Pages](https://pierreg99.github.io/CryoNexis-Lunar-Eclispe/)** veröffentlicht. Der [Pages-Workflow](.github/workflows/pages.yml) liefert alle vierzehn Laufzeitdateien unverändert aus `main/dist/` aus. Änderungen an der App auf `main` werden automatisch veröffentlicht; eine manuelle Veröffentlichung ist über „Run workflow“ möglich. GitHub Pages ist für öffentliche Repositories innerhalb der geltenden GitHub-Limits kostenlos; die App benötigt keine zusätzlichen Dienste. [Hosting und Wiki veröffentlichen →](docs/wiki/Hosting-und-Wiki.md)
 
 Three.js r149 ist lokal enthalten und unter MIT lizenziert: [Lizenz](dist/assets/vendor/THREE-LICENSE.txt). Für den eigenen Projektcode ist bislang keine separate Lizenz festgelegt.
 
@@ -93,6 +93,12 @@ Bei reduzierter Bewegung bleiben die ruhigen Hintergrundansichten ohne 3D-Downlo
 
 ## Zeitlich begrenzter CRYO-Zugang
 
-Mit **`unlock cryo`** öffnest du den Vault unabhängig von Phase, Bindungen, Stabilität und Kohärenz bis einschließlich **31. Oktober 2026, 23:59:59 UTC**. Alle Ansichten und vorhandenen Aktionen bleiben nutzbar; Einlagern, Entnehmen und simulierte Zinsen funktionieren im offenen Vault. Guthaben- und Mengenlimits gelten weiterhin. `vault` zeigt den Zugang und das Ablaufdatum; `help` erklärt alle 22 Befehle.
+Mit **`unlock cryo`** öffnest du den Vault unabhängig von Phase, Bindungen, Stabilität und Kohärenz bis einschließlich **31. Oktober 2026, 23:59:59 UTC**. Alle Ansichten und vorhandenen Aktionen bleiben nutzbar; Einlagern, Entnehmen und simulierte Zinsen funktionieren im offenen Vault. Guthaben- und Mengenlimits gelten weiterhin. `vault` zeigt den Zugang und das Ablaufdatum; `help` erklärt alle 27 Befehle.
 
 Die Freischaltung wird lokal gespeichert. Ab **1. November 2026, 00:00 UTC** gelten wieder die normalen Zugangsbedingungen; Guthaben bleibt erhalten. `reset confirm` entfernt auch die Freischaltung. Das Datum folgt der Geräteuhr der lokalen Simulation, nicht einer serverseitigen Zugangskontrolle.
+
+## Forschungssphäre und Fähigkeiten
+
+**`unlock cryo`** und **`cryo unlock`** laden das Observatorium. Zwei erfasste Phasen plus eine Knotenposition öffnen das Resonanzlabor. Fünf erfasste Phasen, drei kalibrierte Knoten und Vault-Ertrag öffnen das Zeitarchiv. Alle Aufgaben sind über die Forschungskarten in der letzten Sektion bedienbar; `missions`, `observe`, `calibrate ID` und `decode` bieten dieselben Aktionen im Terminal.
+
+Forschungsnachweise bleiben lokal gespeichert. Beobachtungen verändern die Finsternis, Resonanzbaken das Nexus-Signal und die entschlüsselte Zeitspur den Nebel. Vier Forschungsdateien laden erst nach Zugang und jeweiliger Freischaltung; sie benötigen keine zusätzlichen Renderer oder Dienste. [Fähigkeiten, Aufgaben und Freischaltungen →](docs/wiki/Forschung.md)

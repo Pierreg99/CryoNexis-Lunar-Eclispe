@@ -102,7 +102,8 @@
       r.corona.material.uniforms.time.value = t; r.corona.material.uniforms.bass.value = audio.bass; r.corona.material.uniforms.phase.value = phase;
       r.corona.material.uniforms.exposure.value = exposure; r.corona.material.uniforms.flux.value = s.flux;
       r.diamond.material.uniforms.time.value = t; r.diamond.material.uniforms.strength.value = diamondStrength;
-      r.sparks.material.uniforms.time.value = t; r.sparks.material.uniforms.opacity.value = .12 + s.flux * .35; r.sparks.rotation.z = t * .012;
+      r.sparks.material.uniforms.time.value = t; r.sparks.material.uniforms.opacity.value = .12 + s.flux * .35 + (s.surveyCount || 0) * .015;
+      r.visual.surveyCount = s.surveyCount || 0; r.sparks.rotation.z = t * .012;
       r.prominences.forEach((arc, i) => { arc.scale.setScalar(.85 + s.flux * .14 + Math.sin(t * .4 + i) * .06); arc.material.opacity = .25 + s.flux * .45; });
       r.visual.phase = phase; r.visual.moonOffset = r.moon.position.x; r.visual.coronaExposure = exposure; r.visual.diamondStrength = diamondStrength; r.visual.flux = s.flux;
     }, { camPos: [0, 0, 13], fov: 50 });
@@ -132,7 +133,9 @@
         shard.mesh.scale.copy(shard.scale).multiplyScalar(size);
         shard.mesh.position.set(Math.cos(a) * radius, Math.sin(a) * radius * .72, Math.sin(a + shard.offset) * (bound ? .7 : 1.8)); shard.mesh.rotation.set(t * .09 + shard.offset, a, a * .6);
       });
-      const connection = s.coherence * (.2 + boundCount / 6 * .8);
+      const calibratedCount = (s.calibrated || []).filter(Boolean).length;
+      const connection = s.coherence * (.2 + boundCount / 6 * .8) + calibratedCount * .035;
+      r.visual.calibratedCount = calibratedCount;
       r.core.material.uniforms.connection.value = connection; r.nodes.material.uniforms.time.value = t; r.nodes.material.uniforms.opacity.value = .16 + connection * .3;
       r.visual.boundCount = boundCount; r.visual.connection = connection; r.visual.bindings = s.bindings; r.visual.holdings = s.holdings;
     }, { camPos: [0, 0, 15], fov: 52 });
@@ -195,7 +198,8 @@
         void main(){vec3 d=normalize(vPosition);vec3 p=d*3.+vec3(sin(echoes*.42),cos(echoes*.31),sin(echoes*.27))*.2;float a=.5;for(int i=0;i<3;i++){p+=sin(p.yzx*1.8+time*.025)*a+cos(p.zxy*1.3-time*.018)*a;p*=1.45;a*=.5;}float mist=fbm(p);float clouds=pow(max(0.,mist-.27),2.);vec3 cold=vec3(.035,.07,.14);vec3 violet=vec3(.14,.08,.3);vec3 c=mix(cold,violet,clamp(d.x*.5+.5+(1.-coherence)*.25,0.,1.))*clouds*2.;c+=vec3(.08,.25,.3)*pow(mist,5.)*(.7+coherence*.6+mid*.4);float trace=pow(.5+.5*sin((d.y+d.x*.3)*(8.+echoes*1.8)+time*.03),8.)*min(echoes*.18,1.);c+=vec3(.06,.12,.18)*trace*.3;gl_FragColor=vec4(c,1.);}` })); scene.add(sky);
       const dust = particles(5000, 27, 0xa9c7ee, .22); scene.add(dust); return { sky, dust, visual: {} };
     }, ({ camera, refs: r, t, audio, phase, simulation: s }) => {
-      const echoScale = Math.min(12, Math.log1p(s.echoes));
+      const echoScale = Math.min(12, Math.log1p(s.echoes) + (s.archiveDecoded ? 4 : 0));
+      r.visual.archiveDecoded = !!s.archiveDecoded;
       r.sky.material.uniforms.time.value = t; r.sky.material.uniforms.mid.value = audio.mid; r.sky.material.uniforms.coherence.value = s.coherence; r.sky.material.uniforms.echoes.value = echoScale;
       r.sky.rotation.y = t * .006 + phase * .035 + echoScale * .02;
       r.dust.material.uniforms.time.value = t; r.dust.material.uniforms.opacity.value = .15 + s.coherence * .22 + Math.min(1, echoScale / 4) * .08;

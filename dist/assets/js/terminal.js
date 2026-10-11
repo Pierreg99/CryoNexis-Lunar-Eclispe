@@ -10,6 +10,11 @@
   const precise = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 6 });
   const interest = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
   const commands = Object.freeze({
+    cryo: [1, 1, 'cryo unlock', 'cryo unlock', 'Alternative Schreibweise für unlock cryo. Lädt die Forschungsfähigkeiten bei aktivem Zugang.'],
+    missions: [0, 0, 'missions', 'missions', 'Zeigt Forschungsfortschritt, Fähigkeiten und die nächsten Freischaltungen.'],
+    observe: [0, 0, 'observe', 'observe', 'Erfasst die aktuelle Finsternisphase im Observatorium. Jede Phase kann einmal erfasst werden.'],
+    calibrate: [1, 1, 'calibrate ID', 'calibrate CN-BOREALIS', 'Kalibriert im Resonanzlabor einen gebundenen Knoten mit Stärke mindestens 90 %. Benötigt zwei erfasste Phasen und eine gehaltene Position.'],
+    decode: [0, 0, 'decode', 'decode', 'Entschlüsselt die Zeitspur im Archiv. Benötigt fünf erfasste Phasen, drei kalibrierte Knoten und Vault-Ertrag.'],
     unlock: [1, 1, 'unlock cryo', 'unlock cryo', 'Öffnet den Vault bis einschließlich 31.10.2026 UTC unabhängig von Phase, Bindungen und Stabilität. Guthabenlimits gelten weiter; reset entfernt die Freischaltung.'],
     help: [0, 1, 'help [Befehl]', 'help buy', 'Zeigt alle Befehle oder Hilfe für einen einzelnen Befehl.'],
     tasks: [0, 0, 'tasks', 'tasks', 'Zeigt aktuell erfüllte Aufgaben und konkrete nächste Schritte.'],
@@ -112,8 +117,20 @@
     let result;
     switch (command) {
       case 'help':
-        appendTerminal(parts[1] ? help(parts[1].toLowerCase()) : 'help BEFEHL → Erklärung und Beispiel\ntasks → Aufgabenstand und nächste Schritte\nhelp / status / nodes / phase / eclipse / vault / clear\nportfolio → Guthaben, Positionen, Gebühren\nhistory → Deine Zeitspuren\nphase 1..5 → Phase wählen (kostet Kohärenz)\nbuy ID Menge / sell ID Menge → Handeln\nlink ID / unlink ID → Zeitbindung (1.200 / +400 CNX)\nstabilize ID → Knoten stärken (700 CNX)\ndeposit Betrag / withdraw Betrag → Vault\npause / resume / step → Simulationszeit steuern\nreset confirm → Lokalen Fortschritt löschen\nBeispiel: buy CN-ALPHA-01 2,5\nAlle Werte sind fiktiv, lokal und deterministisch.');
+        appendTerminal(parts[1] ? help(parts[1].toLowerCase()) : 'unlock cryo / cryo unlock → Forschungsfähigkeiten laden\nmissions / observe / calibrate ID / decode → Projektsphäre erschließen\nhelp BEFEHL → Erklärung und Beispiel\ntasks → Aufgabenstand und nächste Schritte\nhelp / status / nodes / phase / eclipse / vault / clear\nportfolio → Guthaben, Positionen, Gebühren\nhistory → Deine Zeitspuren\nphase 1..5 → Phase wählen (kostet Kohärenz)\nbuy ID Menge / sell ID Menge → Handeln\nlink ID / unlink ID → Zeitbindung (1.200 / +400 CNX)\nstabilize ID → Knoten stärken (700 CNX)\ndeposit Betrag / withdraw Betrag → Vault\npause / resume / step → Simulationszeit steuern\nreset confirm → Lokalen Fortschritt löschen\nBeispiel: buy CN-ALPHA-01 2,5\nAlle Werte sind fiktiv, lokal und deterministisch.');
         break;
+      case 'missions': {
+        const research = state.expedition;
+        appendTerminal('FORSCHUNG / ' + (state.vault.cryoUnlocked ? 'CRYO AKTIV' : 'ZUGANG INAKTIV · unlock cryo') +
+          '\nObservatorium: ' + research.observed.length + '/5 Phasen erfasst · phase 1..5, dann observe' +
+          '\nResonanzlabor: ' + (research.networkUnlocked ? 'FREIGESCHALTET' : 'zwei Phasen erfassen und eine Position halten') + ' · ' + research.calibrated.length + '/6 Knoten kalibriert' +
+          '\nZeitarchiv: ' + (research.archiveUnlocked ? 'FREIGESCHALTET' : 'fünf Phasen, drei Kalibrierungen und Vault-Ertrag benötigt') +
+          '\nZeitspur: ' + (research.decoded ? 'ENTSCHLÜSSELT' : 'decode nach Archiv-Freischaltung') + '\nForschungsfortschritt bleibt gespeichert; neue Aktionen benötigen aktiven CRYO-Zugang.');
+        break;
+      }
+      case 'observe': case 'decode': result = action(command); break;
+      case 'calibrate': result = action(command, { id: id }); break;
+      case 'cryo': result = parts[1].toLowerCase() === 'unlock' ? action('unlock', { key: 'cryo' }) : { ok: false, message: 'Verwende cryo unlock.' }; break;
       case 'tasks':
         appendTerminal(tasks(state)); break;
       case 'status':

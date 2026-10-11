@@ -54,8 +54,22 @@
     };
   }
 
+  function expeditionInitial() {
+    return { observed: [], calibrated: [], networkUnlocked: false, archiveUnlocked: false, decoded: false };
+  }
+  function validExpedition(value) {
+    return exactKeys(value, ['observed', 'calibrated', 'networkUnlocked', 'archiveUnlocked', 'decoded']) &&
+      Array.isArray(value.observed) && value.observed.length <= 5 && new Set(value.observed).size === value.observed.length && value.observed.every(phase => integer(phase, 0, 4)) &&
+      Array.isArray(value.calibrated) && value.calibrated.length <= 6 && new Set(value.calibrated).size === value.calibrated.length && value.calibrated.every(id => BASE.some(node => node.id === id)) &&
+      typeof value.networkUnlocked === 'boolean' && typeof value.archiveUnlocked === 'boolean' && typeof value.decoded === 'boolean' &&
+      (!value.networkUnlocked || value.observed.length >= 2) && (!value.calibrated.length || value.networkUnlocked) &&
+      (!value.archiveUnlocked || value.observed.length === 5 && value.calibrated.length >= 3 && value.networkUnlocked) && (!value.decoded || value.archiveUnlocked);
+  }
   function validSaved(saved) {
-    if (!exactKeys(saved, ['version', 'seed', 'rng', 'phase', 'tick', 'cycle', 'paused', 'cash', 'coherence', 'feesPaid', 'historySeq', 'history', 'nodes', 'vault']) ||
+    if (saved && Object.prototype.hasOwnProperty.call(saved, 'expedition') && !validExpedition(saved.expedition)) return false;
+    const savedKeys = ['version', 'seed', 'rng', 'phase', 'tick', 'cycle', 'paused', 'cash', 'coherence', 'feesPaid', 'historySeq', 'history', 'nodes', 'vault'];
+    if (saved && Object.prototype.hasOwnProperty.call(saved, 'expedition')) savedKeys.push('expedition');
+    if (!exactKeys(saved, savedKeys) ||
       saved.version !== VERSION || !integer(saved.seed, 0, 4294967295) ||
       !integer(saved.rng, 0, 4294967295) || !integer(saved.phase, 0, 4) || !integer(saved.tick, 0, 100000000) ||
       !integer(saved.cycle, 0, 1000000) || typeof saved.paused !== 'boolean' ||
@@ -72,7 +86,7 @@
       typeof node.bound === 'boolean' && finite(node.change, -0.6, 0.6) && precise(node.change, 4))) return false;
     let previous = 0;
     let previousTick = 0;
-    const historyTypes = ['unlock', 'tick', 'step', 'phase', 'auto-phase', 'pause', 'resume', 'buy', 'sell', 'link', 'unlink', 'stabilize', 'deposit', 'withdraw'];
+    const historyTypes = ['observe', 'calibrate', 'decode', 'discovery', 'unlock', 'tick', 'step', 'phase', 'auto-phase', 'pause', 'resume', 'buy', 'sell', 'link', 'unlink', 'stabilize', 'deposit', 'withdraw'];
     if (!saved.history.every(entry => {
       if (!exactKeys(entry, ['id', 'tick', 'type', 'text', 'phase']) || !integer(entry.id, previous + 1, saved.historySeq) || !integer(entry.tick, previousTick, saved.tick) ||
         !integer(entry.phase, 0, 4) || !historyTypes.includes(entry.type) ||
@@ -156,7 +170,9 @@
       const values = derived();
       const current = profile();
       const exposure = values.equity ? values.portfolioValue / values.equity : 0;
+      const expedition = clone(state.expedition || expeditionInitial());
       return {
+        expedition: expedition,
         version: VERSION, seed: state.seed, restored: restored, restoreError: restoreError,
         phase: state.phase, phaseName: current.name, tick: state.tick, minutes: state.tick * 5,
         cycle: state.cycle, paused: state.paused, cash: state.cash, equity: values.equity,
@@ -169,6 +185,7 @@
           corona: current.corona, temperature: money(current.temperature + values.bound * 0.04 + exposure * 0.4),
           bindings: state.nodes.map(node => node.bound), strengths: state.nodes.map(node => node.strength / 100),
           holdings: values.nodes.map(node => clamp(node.positionValue / Math.max(1, values.equity) * 3, 0, 1)),
+          surveyCount: expedition.observed.length, calibrated: BASE.map(node => expedition.calibrated.includes(node.id)), archiveDecoded: expedition.decoded,
           vaultOpen: values.vault.open, vaultPower: clamp(state.vault.balance / 100000, 0, 1), echoes: state.historySeq
         }
       };
@@ -178,7 +195,18 @@
         try { subscriber(snapshot()); } catch (_) { /* A view failure cannot corrupt a transaction. */ }
       });
     }
-    function done(message) { emit(); return { ok: true, message: message }; }
+    function done(message) {
+      const research = state.expedition;
+      if (research && derived().vault.cryoUnlocked) {
+        if (!research.networkUnlocked && research.observed.length >= 2 && state.nodes.some(node => node.quantity > 0)) {
+          research.networkUnlocked = true; record('discovery', 'Resonanzlabor freigeschaltet: zwei Phasen erfasst und eine Knotenposition gehalten.');
+        }
+        if (!research.archiveUnlocked && research.observed.length === 5 && research.calibrated.length >= 3 && state.vault.earned > 0) {
+          research.archiveUnlocked = true; record('discovery', 'Zeitarchiv freigeschaltet: fünf Phasen, drei Resonanzen und Vault-Ertrag nachgewiesen.');
+        }
+      }
+      emit(); return { ok: true, message: message };
+    }
     function findNode(id) { return state.nodes.findIndex(node => node.id === id); }
     function gateReason() {
       return 'Das Vault-Gate ist geschlossen: ' + derived().vault.conditions.filter(condition => !condition.met).map(condition => condition.label).join('; ') + '.';
@@ -272,9 +300,35 @@
 
     function act(type, payload) {
       payload = payload || {};
+      if (['observe', 'calibrate', 'decode'].includes(type)) {
+        if (!derived().vault.cryoUnlocked) return failure('Die Fähigkeit benötigt aktiven CRYO-Zugang. Nutze unlock cryo bis 31.10.2026 UTC.');
+        const research = state.expedition || expeditionInitial();
+        if (type === 'observe') {
+          if (research.observed.includes(state.phase)) return failure('Diese Phase wurde bereits erfasst. Wähle eine andere Phase.');
+          research.observed.push(state.phase); state.expedition = research;
+          record('observe', profile().name + ' im Observatorium erfasst.');
+          return done('Phase ' + profile().name + ' erfasst (' + research.observed.length + '/5). Beobachtung verstärkt die Lichtsignatur der Finsternis.');
+        }
+        if (type === 'calibrate') {
+          if (!research.networkUnlocked) return failure('Resonanzlabor gesperrt: erfasse zwei Phasen mit observe und halte eine Knotenposition.');
+          const node = state.nodes[findNode(payload.id)];
+          if (!node) return failure('Dieser Knoten existiert nicht.');
+          if (research.calibrated.includes(node.id)) return failure('Dieser Knoten ist bereits kalibriert.');
+          if (!node.bound || node.strength < 90) return failure('Kalibrierung benötigt einen gebundenen Knoten mit Stärke mindestens 90 %. Nutze link und stabilize.');
+          research.calibrated.push(node.id); state.expedition = research;
+          record('calibrate', node.id + ' als Resonanzbake kalibriert.');
+          return done(node.id + ' kalibriert (' + research.calibrated.length + '/6). Die Resonanzbake verstärkt das Eis-Nexus-Signal.');
+        }
+        if (!research.archiveUnlocked) return failure('Zeitarchiv gesperrt: erfasse alle fünf Phasen, kalibriere drei Knoten und erzeuge Vault-Ertrag mit deposit und step.');
+        if (research.decoded) return failure('Die Zeitspur ist bereits entschlüsselt. Dein Archiv bleibt einsehbar.');
+        research.decoded = true; state.expedition = research;
+        record('decode', 'Zeitspur 004 entschlüsselt: Der Nexus bewahrt Entscheidungen als Licht im Nebel.');
+        return done('Zeitspur 004 entschlüsselt. Das Archiv und eine zusätzliche Nebelsignatur sind freigeschaltet.');
+      }
       if (type === 'unlock') {
         if (payload.key !== 'cryo') return failure('Verwende unlock cryo.');
         if (now() >= unlockDeadline) return failure('Der CRYO-Zugang endete am 31.10.2026 um 23:59:59 UTC. Es gelten wieder die normalen Vault-Bedingungen.');
+        if (!state.expedition) state.expedition = expeditionInitial();
         if (!state.vault.cryoUnlocked) { state.vault.cryoUnlocked = true; record('unlock', 'CRYO-Zugang bis einschließlich 31.10.2026 UTC aktiviert.'); }
         return done('Vault freigeschaltet bis 31.10.2026, 23:59:59 UTC. Alle Ansichten und Aktionen sind verfügbar. Guthaben und Mengenlimits gelten weiter. Nächster Schritt: vault, deposit 1000 oder help.');
       }

@@ -563,6 +563,25 @@
   finishBoot();
   performance.mark('cryonexus:ui-ready');
 
+  let expeditionLoading = false;
+  const capabilitySources = {
+    observatory: 'assets/js/capabilities/observatory.js?v=49218de1',
+    resonance: 'assets/js/capabilities/resonance.js?v=4247d205',
+    archive: 'assets/js/capabilities/archive.js?v=f05b5d10'
+  };
+  function startExpedition(next) {
+    if (!next.vault.cryoUnlocked || expeditionLoading || window.CryoExpedition) return;
+    expeditionLoading = true;
+    loadScript('assets/js/expedition.js?v=f7503c8c').then(function () {
+      window.CryoExpedition.start({ subscribe: simulation.subscribe, command: terminalCommand, phases: phases,
+        load: function (id) { return loadScript(capabilitySources[id]); } });
+    }).catch(function () {
+      expeditionLoading = false;
+      appendTerminal('Forschungsmodule konnten nicht geladen werden. Nutze missions, observe, calibrate und decode oder wiederhole unlock cryo.', 'error');
+    });
+  }
+  simulation.subscribe(startExpedition);
+
   // The UI and model are usable before downloading or compiling the 3D layer.
   // Keep audio and simulation listeners in the small engine loaded above.
   let graphicsScheduled = false;
@@ -587,7 +606,7 @@
           if (motion.matches || document.hidden || graphicsStarted) return;
           graphicsStarted = true;
           loadScript('assets/vendor/three.min.js')
-            .then(function () { return loadScript('assets/js/scenes.js'); })
+            .then(function () { return loadScript('assets/js/scenes.js?v=5111cc16'); })
             .then(function () { performance.mark('cryonexus:graphics-ready'); })
             .catch(function () {
               document.dispatchEvent(new CustomEvent('cryonexus:graphics', { detail: 'fallback' }));

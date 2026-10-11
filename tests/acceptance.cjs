@@ -44,7 +44,7 @@ async function staticAcceptance() {
   assert.match(html, /<html lang="de"/);
   const css = await fs.readFile(path.join(dist, 'assets/css/main.css'), 'utf8');
   assert.deepEqual(Array.from(css.matchAll(/\/\*\s*(\d{2})\s*[—-]/g), match => Number(match[1])),
-    Array.from({ length: 21 }, (_, index) => index + 1));
+    Array.from({ length: 22 }, (_, index) => index + 1));
   const app = await fs.readFile(path.join(dist, 'assets/js/app.js'), 'utf8');
   assert.doesNotMatch(app, /\bTHREE\b|\bcinema\.boot\s*\(|\bWebGLRenderer\b/,
     'The interface layer must not construct 3D scenes');
@@ -992,7 +992,7 @@ async function terminalRun(browser, url) {
   await assertNoAnimations(page, 'Terminal outcomes with reduced motion');
   await clean(run);
   await run.context.close();
-  report.runs.push({ name: 'terminal-outcomes', commands: 22 });
+  report.runs.push({ name: 'terminal-outcomes', commands: 27 });
   console.log('PASS terminal outcomes: every help entry, safe syntax, actual receipts, all six tasks and reset');
 }
 

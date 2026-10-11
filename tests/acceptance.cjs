@@ -34,13 +34,13 @@ async function staticAcceptance() {
   await Promise.all(expected.map(file => fs.access(path.join(dist, file))));
   const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
   const scripts = Array.from(html.matchAll(/<script\s+src="([^"]+)"/g), match => match[1]);
-  assert.deepEqual(scripts.map(source => source.split('?')[0]), ['assets/vendor/cinema_engine.js', 'assets/js/simulation.js', 'assets/js/terminal.js', 'assets/js/app.js']);
+  assert.deepEqual(scripts.map(source => source.split('?')[0]), ['assets/vendor/cinema_engine.js', 'assets/js/simulation.js', 'assets/js/terminal.js', 'assets/js/app.js', 'assets/js/astro-zen.js']);
   for (const source of scripts) {
     const url = new URL(source, 'http://localhost/');
     const digest = createHash('sha256').update(await fs.readFile(path.join(dist, url.pathname))).digest('hex').slice(0, 8);
     assert.equal(url.searchParams.get('v'), digest, 'Changed critical scripts must have a new cache URL');
   }
-  assert.equal((html.match(/<script[^>]+ defer>/g) || []).length, 4, 'Critical scripts must not block HTML parsing');
+  assert.equal((html.match(/<script[^>]+ defer>/g) || []).length, 5, 'Critical scripts must not block HTML parsing');
   assert.match(html, /<html lang="de"/);
   const css = await fs.readFile(path.join(dist, 'assets/css/main.css'), 'utf8');
   assert.deepEqual(Array.from(css.matchAll(/\/\*\s*(\d{2})\s*[—-]/g), match => Number(match[1])),

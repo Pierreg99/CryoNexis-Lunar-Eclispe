@@ -524,7 +524,7 @@
     });
   }
   function firstPointer(event) {
-    if (audioButton && audioButton.contains(event.target)) return;
+    if (event.target.closest('#zen-start, #zen-controls') || (audioButton && audioButton.contains(event.target))) return;
     document.removeEventListener('pointerdown', firstPointer);
     requestAudio(true);
   }

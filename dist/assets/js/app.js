@@ -570,9 +570,9 @@
     archive: 'assets/js/capabilities/archive.js?v=f05b5d10'
   };
   function startExpedition(next) {
-    if (!next.vault.cryoUnlocked || expeditionLoading || window.CryoExpedition) return;
+    if ((!next.vault.cryoUnlocked && !next.expedition.observed.length && !next.expedition.networkUnlocked) || expeditionLoading || window.CryoExpedition) return;
     expeditionLoading = true;
-    loadScript('assets/js/expedition.js?v=f7503c8c').then(function () {
+    loadScript('assets/js/expedition.js?v=7ba0595e').then(function () {
       window.CryoExpedition.start({ subscribe: simulation.subscribe, command: terminalCommand, phases: phases,
         load: function (id) { return loadScript(capabilitySources[id]); } });
     }).catch(function () {

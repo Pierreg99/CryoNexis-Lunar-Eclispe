@@ -4,7 +4,7 @@
   "private": true,
   "description": "Offline procedural WebGL experience; tooling is development-only.",
   "scripts": {
-    "test": "node tests/simulation.cjs && node tests/terminal.cjs && node tests/acceptance.cjs",
+    "test": "node tests/simulation.cjs && node tests/terminal.cjs && node tests/research.cjs && node tests/acceptance.cjs",
     "test:simulation": "node tests/simulation.cjs"
   },
   "devDependencies": {

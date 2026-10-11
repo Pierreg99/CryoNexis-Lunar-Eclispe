@@ -153,6 +153,9 @@ async function open(browser, url, options = {}) {
     deviceScaleFactor: options.deviceScaleFactor || 1,
   });
   await context.addInitScript(instrument);
+  if (options.now !== undefined) await context.addInitScript(value => {
+    window.__researchNow = value; Date.now = () => window.__researchNow;
+  }, options.now);
   if (options.savedStorage !== undefined) await context.addInitScript(value => {
     localStorage.setItem('cryonexus.simulation.v1', value);
   }, options.savedStorage);
@@ -996,6 +999,70 @@ async function terminalRun(browser, url) {
   console.log('PASS terminal outcomes: every help entry, safe syntax, actual receipts, all six tasks and reset');
 }
 
+async function capabilitiesRun(browser, url) {
+  const run = await open(browser, url, { reduced: true, viewport: { width: 390, height: 844 }, now: Date.UTC(2026, 9, 11) });
+  const { page } = run;
+  const command = async text => { await simulationCommand(page, text); return page.locator('#terminal-output p').last().innerText(); };
+  assert(!run.requests.some(url => /expedition\.js|capabilities\//.test(url)), 'Locked cold start must not download capability modules');
+  await command('pause');
+  const pattern = '**/capabilities/observatory.js?*';
+  await page.route(pattern, route => route.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));
+  assert.match(await command('cryo unlock'), /freigeschaltet/);
+  await page.waitForFunction(() => document.querySelector('#capability-observatory button').hidden === false);
+  assert.match(await page.locator('#capability-observatory').innerText(), /Laden fehlgeschlagen/);
+  await page.unroute(pattern);
+  await page.locator('#capability-observatory button', { hasText: 'Erneut laden' }).click();
+  await page.locator('#capability-observatory button', { hasText: 'Aktuelle Phase erfassen' }).waitFor();
+  assert(!run.requests.some(url => /capabilities\/(resonance|archive)/.test(url)));
+  await page.locator('#capability-observatory button', { hasText: 'Aktuelle Phase erfassen' }).click();
+  await page.locator('#capability-observatory button', { hasText: 'Diamantring' }).click();
+  await page.locator('#capability-observatory button', { hasText: 'Aktuelle Phase erfassen' }).click();
+  assert(!run.requests.some(url => /capabilities\/resonance/.test(url)), 'Position prerequisite must be enforced');
+  await command('buy CN-BOREALIS 1');
+  await page.locator('#capability-resonance .resonance-node').first().waitFor();
+  for (const phase of ['Korona', 'Freisteller', 'Reset']) {
+    await page.locator('#capability-observatory button', { hasText: phase }).click();
+    await page.locator('#capability-observatory button', { hasText: 'Aktuelle Phase erfassen' }).click();
+  }
+  for (const id of ['CN-BOREALIS', 'CN-KRYO-7X', 'CN-HALO']) {
+    const row = page.locator('.resonance-node').filter({ hasText: id });
+    await row.getByRole('button', { name: 'Binden', exact: false }).click();
+    await row.getByRole('button', { name: 'Kalibrieren', exact: true }).click();
+  }
+  assert(!run.requests.some(url => /capabilities\/archive/.test(url)), 'Vault yield prerequisite must be enforced');
+  await command('deposit 1000'); await command('step');
+  await page.locator('#capability-archive button', { hasText: 'Zeitspur 004 entschlüsseln' }).click();
+  assert.match(await page.locator('#capability-archive').innerText(), /Archiv dauerhaft entdeckt/);
+  const progress = (await readSimulation(page)).state.expedition;
+  assert.equal(progress.observed.length, 5); assert.equal(progress.calibrated.length, 3); assert(progress.decoded);
+  assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  await page.screenshot({ path: path.join(artifacts, 'research-mobile.png') });
+  await page.reload();
+  await page.locator('#capability-archive a').waitFor();
+  assert.deepEqual((await readSimulation(page)).state.expedition, progress);
+  for (const id of ['resonance', 'archive']) {
+    const scripts = await page.locator('script[src*="capabilities/' + id + '.js"]').count();
+    assert.equal(scripts, 1, 'Restored modules must load once');
+  }
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  for (const [id, key, expected] of [['cn-eclipse', 'surveyCount', 5], ['cn-nexus', 'calibratedCount', 3], ['cn-void', 'archiveDecoded', true]]) {
+    await page.locator('#' + id).evaluate(canvas => canvas.closest('section').scrollIntoView({ behavior: 'instant' }));
+    await page.waitForFunction(({ id, key, expected }) => cinema.getStats().scenes.some(scene => scene.id === id && scene.running && scene.visual[key] === expected), { id, key, expected });
+    assert((await page.evaluate(() => cinema.getStats().contexts)) <= 2);
+  }
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.evaluate(() => { window.__researchNow = Date.UTC(2026, 10, 1); });
+  await page.waitForFunction(() => document.getElementById('expedition-status').textContent.includes('Zugang abgelaufen'));
+  assert.match(await command('observe'), /benötigt aktiven CRYO/);
+  assert.equal(await page.locator('#capability-archive a').isVisible(), true);
+  await command('reset confirm');
+  assert.equal(await page.locator('#expedition').isHidden(), true);
+  assert.equal((await readSimulation(page)).state.expedition.decoded, false);
+  await clean(run); await run.context.close();
+  report.runs.push({ name: 'research-capabilities', phases: 5, calibrated: 3, decoded: true });
+  console.log('PASS research: lazy modules, retry, interactive milestones, persistence, scene consequences, expiry and reset');
+}
+
 async function zenRun(browser, url) {
   const run = await open(browser, url, { reduced: true, viewport: { width: 390, height: 844 } });
   const { page } = run;
@@ -1115,8 +1182,8 @@ async function bootFailsafe(browser, url) {
 }
 
 async function main() {
-  assert(Array.from(suites).every(suite => ['all', 'desktop', 'mobile', 'reduced', 'simulation', 'recovery', 'boot', 'gpu', 'startup', 'terminal', 'zen'].includes(suite)),
-    'Unknown ACCEPTANCE_SUITE; use all, desktop, mobile, reduced, simulation, recovery, boot, gpu, startup, terminal or zen');
+  assert(Array.from(suites).every(suite => ['all', 'desktop', 'mobile', 'reduced', 'simulation', 'recovery', 'boot', 'gpu', 'startup', 'terminal', 'zen', 'capabilities'].includes(suite)),
+    'Unknown ACCEPTANCE_SUITE; use all, desktop, mobile, reduced, simulation, recovery, boot, gpu, startup, terminal, zen or capabilities');
   report.suites = Array.from(suites);
   await fs.mkdir(artifacts, { recursive: true });
   await staticAcceptance();
@@ -1173,6 +1240,7 @@ async function main() {
     if (enabled('startup')) await startupRun(browser, local);
     if (enabled('terminal')) await terminalRun(browser, local);
     if (enabled('zen')) await zenRun(browser, local);
+    if (enabled('capabilities')) await capabilitiesRun(browser, local);
     console.log(`PASS payload ${report.payloadBytes} bytes; Chromium ${report.browser}; ${report.runs.length} browser runs; ${report.blocked.length} policy-blocked runs`);
     if (!fileAllowed && process.env.REQUIRE_FILE_TEST === '1') throw new Error('Required file:// browser validation was blocked by administrator policy');
     report.status = 'passed';

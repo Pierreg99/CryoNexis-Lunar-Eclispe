@@ -4,7 +4,7 @@
   const definitions = new Map(), views = new Map(), loading = new Map();
   let api, current;
   const catalog = [
-    { id: 'observatory', title: '01 · Observatorium', goal: 'Erfasse zwei verschiedene Phasen und halte eine Knotenposition. Dadurch öffnet sich das Resonanzlabor.', eligible: state => state.vault.cryoUnlocked },
+    { id: 'observatory', title: '01 · Observatorium', goal: 'Erfasse zwei verschiedene Phasen und halte eine Knotenposition. Dadurch öffnet sich das Resonanzlabor.', eligible: state => state.vault.cryoUnlocked || state.expedition.observed.length > 0 },
     { id: 'resonance', title: '02 · Resonanzlabor', goal: 'Erfasse alle fünf Phasen, kalibriere drei gebundene Knoten mit Stärke ≥90 % und erzeuge Vault-Ertrag. Dadurch öffnet sich das Zeitarchiv.', eligible: state => state.expedition.networkUnlocked },
     { id: 'archive', title: '03 · Zeitarchiv', goal: 'Entschlüssle Zeitspur 004. Deine Forschung wird als Nebelsignatur sichtbar.', eligible: state => state.expedition.archiveUnlocked }
   ];
@@ -52,7 +52,7 @@
         view.note.textContent = earned ? 'Fähigkeit geladen' : 'Fähigkeit derzeit gesperrt';
         return;
       }
-      if (earned && state.vault.cryoUnlocked) load(entry);
+      if (earned) load(entry);
       else if (!loading.has(entry.id)) view.note.textContent = 'Gesperrt · ' + (entry.id === 'observatory' ? 'unlock cryo eingeben' : entry.goal);
     });
   }

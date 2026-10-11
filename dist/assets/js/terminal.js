@@ -15,7 +15,7 @@
     observe: [0, 0, 'observe', 'observe', 'Erfasst die aktuelle Finsternisphase im Observatorium. Jede Phase kann einmal erfasst werden.'],
     calibrate: [1, 1, 'calibrate ID', 'calibrate CN-BOREALIS', 'Kalibriert im Resonanzlabor einen gebundenen Knoten mit Stärke mindestens 90 %. Benötigt zwei erfasste Phasen und eine gehaltene Position.'],
     decode: [0, 0, 'decode', 'decode', 'Entschlüsselt die Zeitspur im Archiv. Benötigt fünf erfasste Phasen, drei kalibrierte Knoten und Vault-Ertrag.'],
-    unlock: [1, 1, 'unlock cryo', 'unlock cryo', 'Öffnet den Vault bis einschließlich 31.10.2026 UTC unabhängig von Phase, Bindungen und Stabilität. Guthabenlimits gelten weiter; reset entfernt die Freischaltung.'],
+    unlock: [1, 1, 'unlock cryo', 'unlock cryo', 'Lädt das Observatorium und öffnet den Vault bis einschließlich 31.10.2026 UTC unabhängig von Phase, Bindungen und Stabilität. Guthabenlimits gelten weiter; reset entfernt die Freischaltung.'],
     help: [0, 1, 'help [Befehl]', 'help buy', 'Zeigt alle Befehle oder Hilfe für einen einzelnen Befehl.'],
     tasks: [0, 0, 'tasks', 'tasks', 'Zeigt aktuell erfüllte Aufgaben und konkrete nächste Schritte.'],
     status: [0, 0, 'status', 'status', 'Zeigt den aktuellen System- und Simulationszustand.'],
@@ -58,7 +58,8 @@
     ];
     return 'AUFGABEN / ' + lines.filter(line => line[0]).length + ' von ' + lines.length + ' aktuell erfüllt\n' +
       lines.map(line => (line[0] ? '✓ ' : '○ ') + line[1] + (line[0] ? '' : '\n  Nächster Schritt: ' + line[2])).join('\n') +
-      '\nDer Stand folgt deinen aktuellen Positionen und Bedingungen; er vergibt keine zusätzlichen Belohnungen. Alle CNX sind fiktiv.';
+      '\nDer Stand folgt deinen aktuellen Positionen und Bedingungen; er vergibt keine zusätzlichen Belohnungen. Alle CNX sind fiktiv.' +
+      (state.vault.cryoUnlocked || state.expedition.observed.length ? '\nFORSCHUNG: ' + state.expedition.observed.length + '/5 Phasen · ' + state.expedition.calibrated.length + '/6 Resonanzbaken · ' + (state.expedition.decoded ? 'Zeitspur entschlüsselt' : 'Zeitspur offen') + '\nNächster Schritt: missions · observe · calibrate ID · decode' : '\nWeitere Fähigkeiten: unlock cryo lädt das Observatorium.');
   }
   function outcome(command, id, result, before, after, trade, reduced) {
     const node = after.nodes.find(item => item.id === id);

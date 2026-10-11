@@ -40,6 +40,8 @@ const restored = Simulation.create({ saved, now: () => time });
 assert(restored.snapshot().restored);
 assert.deepEqual(restored.snapshot().expedition, state.expedition);
 time = Date.UTC(2026, 10, 1);
+let refreshed; restored.subscribe(state => { refreshed = state.vault.cryoUnlocked; });
+restored.refresh(); assert.equal(refreshed, false);
 assert.equal(restored.snapshot().vault.cryoUnlocked, false);
 assert(restored.snapshot().expedition.decoded);
 const expired = restored.serialize();

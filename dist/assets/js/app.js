@@ -81,7 +81,7 @@
     const now = new Date();
     if (clock) { clock.textContent = now.toISOString().slice(11, 19); clock.dateTime = now.toISOString(); }
     syncScenes();
-    if (state.vault.cryoUnlocked && Date.now() >= state.vault.unlockDeadline) renderSimulation(simulation.snapshot());
+    if (state.vault.cryoUnlocked && Date.now() >= state.vault.unlockDeadline) simulation.refresh();
   }
   function syncScenes() {
     if (window.cinema && typeof window.cinema.getStats === 'function') {
@@ -230,6 +230,8 @@
     setText('hero-temperature', number.format(state.visual.temperature));
     setText('sim-fees', 'HANDELSGEBÜHREN ' + interest.format(state.feesPaid) + ' CNX');
     setText('vault-state', state.vault.cryoUnlocked ? 'CRYO OFFEN · BIS 31.10.2026 UTC' : state.vault.open ? 'ZEITFENSTER OFFEN' : 'GESPERRT');
+    const expeditionLink = document.getElementById('expedition-link');
+    if (expeditionLink) expeditionLink.hidden = !state.vault.cryoUnlocked && !state.expedition.observed.length && !state.expedition.networkUnlocked;
     const ledger = document.querySelector('.vault-ledger');
     if (ledger) ledger.dataset.open = String(state.vault.open);
     setText('vault-balance', interest.format(state.vault.balance) + ' CNX');
@@ -572,11 +574,14 @@
   function startExpedition(next) {
     if ((!next.vault.cryoUnlocked && !next.expedition.observed.length && !next.expedition.networkUnlocked) || expeditionLoading || window.CryoExpedition) return;
     expeditionLoading = true;
+    document.getElementById('expedition').hidden = false;
+    setText('expedition-status', 'Forschungsfähigkeiten werden geladen …');
     loadScript('assets/js/expedition.js?v=8f21a372').then(function () {
       window.CryoExpedition.start({ subscribe: simulation.subscribe, command: terminalCommand, phases: phases, quote: simulation.quote,
         load: function (id) { return loadScript(capabilitySources[id]); } });
     }).catch(function () {
       expeditionLoading = false;
+      setText('expedition-status', 'Forschungsmodule konnten nicht geladen werden. Wiederhole unlock cryo oder nutze missions im Terminal.');
       appendTerminal('Forschungsmodule konnten nicht geladen werden. Nutze missions, observe, calibrate und decode oder wiederhole unlock cryo.', 'error');
     });
   }

@@ -330,7 +330,7 @@
         if (now() >= unlockDeadline) return failure('Der CRYO-Zugang endete am 31.10.2026 um 23:59:59 UTC. Es gelten wieder die normalen Vault-Bedingungen.');
         if (!state.expedition) state.expedition = expeditionInitial();
         if (!state.vault.cryoUnlocked) { state.vault.cryoUnlocked = true; record('unlock', 'CRYO-Zugang bis einschließlich 31.10.2026 UTC aktiviert.'); }
-        return done('Vault freigeschaltet bis 31.10.2026, 23:59:59 UTC. Alle Ansichten und Aktionen sind verfügbar. Guthaben und Mengenlimits gelten weiter. Nächster Schritt: vault, deposit 1000 oder help.');
+        return done('Vault freigeschaltet bis 31.10.2026, 23:59:59 UTC. Alle Ansichten und Aktionen sind verfügbar. Guthaben und Mengenlimits gelten weiter. Nächster Schritt: Forschungsfähigkeiten öffnen oder missions.');
       }
       if (type === 'step') return tick({ force: true });
       if (type === 'reset') {
@@ -402,7 +402,7 @@
     }
 
     return Object.freeze({
-      snapshot: snapshot, tick: tick, selectPhase: selectPhase, act: act, quote: quote,
+      snapshot: snapshot, refresh: emit, tick: tick, selectPhase: selectPhase, act: act, quote: quote,
       subscribe: function (subscriber) {
         if (typeof subscriber !== 'function') throw new TypeError('A subscriber must be a function.');
         subscribers.add(subscriber);

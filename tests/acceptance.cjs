@@ -46,6 +46,11 @@ async function staticAcceptance() {
   assert.deepEqual(Array.from(css.matchAll(/\/\*\s*(\d{2})\s*[—-]/g), match => Number(match[1])),
     Array.from({ length: 22 }, (_, index) => index + 1));
   const app = await fs.readFile(path.join(dist, 'assets/js/app.js'), 'utf8');
+  const lazySources = Array.from(app.matchAll(/'(assets\/js\/[^'?]+\.js)\?v=([a-f0-9]{8})'/g));
+  assert.equal(lazySources.length, 5, 'Scene and research modules must carry cache versions');
+  for (const [, source, version] of lazySources) {
+    assert.equal(createHash('sha256').update(await fs.readFile(path.join(dist, source))).digest('hex').slice(0, 8), version);
+  }
   assert.doesNotMatch(app, /\bTHREE\b|\bcinema\.boot\s*\(|\bWebGLRenderer\b/,
     'The interface layer must not construct 3D scenes');
   for (const file of delivered.filter(file => /\.(html|css|js)$/.test(file) && !file.endsWith('three.min.js'))) {

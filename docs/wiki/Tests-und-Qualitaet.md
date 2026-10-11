@@ -4,7 +4,7 @@
 
 Der dokumentierte vollständige Lauf vom **10. Oktober 2026** bestand zehn Modell-Testgruppen und zehn HTTP-Browserdurchläufe mit Chromium 151.0.7922.173. Der maßgebliche [Prüfbericht](../../VERIFICATION.md) enthält Ergebnisse und Messgrenzen.
 
-Die Terminal-Erweiterung vom 11. Oktober ergänzt vier reine Terminal-Testgruppen und gezielte Browserprüfungen. Die vorherige Vollprüfung der Engine wird dadurch nicht als neu ausgeführter Hardwaretest ausgegeben.
+Die Terminal-Erweiterung vom 11. Oktober ergänzt einschließlich CRYO-Freischaltung fünf reine Terminal-Testgruppen und gezielte Browserprüfungen. Die vorherige Vollprüfung der Engine wird dadurch nicht als neu ausgeführter Hardwaretest ausgegeben.
 
 ## Ausführen
 
@@ -24,7 +24,8 @@ Die App in `dist/` benötigt keine dieser Entwicklungsabhängigkeiten. `npm run 
 | `ACCEPTANCE_SUITE=recovery npm test` | Beide Kontexte verlieren und getrennt wiederherstellen |
 | `ACCEPTANCE_SUITE=gpu npm test` | DPR 2, Viertel-Bloom, Target-Lebensdauer, tatsächliche GPU-Freigabe und Rückkehr |
 | `ACCEPTANCE_SUITE=simulation npm test` | Abrechnung, Gates, Zinsen, Speicherung, Szenenfolgen und Speicherfehler |
-| `ACCEPTANCE_SUITE=terminal npm test` | Alle 21 Befehle, Hilfe, Belege, Aufgaben, sichere Argumente und mobile Ausgabe |
+| `ACCEPTANCE_SUITE=terminal npm test` | Alle 22 Befehle, Hilfe, Belege, Aufgaben, sichere Argumente und mobile Ausgabe |
+| `ACCEPTANCE_SUITE=zen npm test` | Show-Steuerung, reduzierte Bewegung und alle sechs gerenderten Szenen |
 | `ACCEPTANCE_SUITE=boot npm test` | Unabhängiger 4.200-ms-Fail-Safe |
 | `ACCEPTANCE_SUITE=startup npm test` | UI und Entscheidungen bei angehaltenem Grafikdownload; keine doppelten Downloads |
 

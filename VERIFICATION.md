@@ -6,6 +6,9 @@ Aktueller Umfang: **36 Projektdateien**, **10 Laufzeitdateien mit 761.814 Bytes*
 
 Zehn Modell- und fünf Terminal-Testgruppen bestanden einschließlich Speicherung, Guthabenlimits, Reset und der Grenze zwischen 31.10.2026 23:59:59.999 UTC und 01.11.2026 00:00 UTC.
 
+`ACCEPTANCE_SUITE=terminal,startup,zen npm test` bestand zusätzlich vier lokale Browserdurchläufe. Nach erfolgreichem [Pages-Workflow 38099383500](https://github.com/Pierreg99/CryoNexis-Lunar-Eclispe/actions/runs/38099383500) wurden alle zehn öffentlichen Dateien bytegenau mit Commit `2456cfaf1584272eaef4f4b3190b6c6bb1680b4f` verglichen: 761.814 Bytes stimmen überein. Dieselben vier Browserdurchläufe bestanden anschließend auf der echten HTTPS-Adresse: verzögerter Grafikstart, alle Terminalbefehle einschließlich persistiertem CRYO-Zugang und Ablauf, mobile Show-Steuerung und sechs gerenderte Show-Szenen. Keine blockierten Durchläufe oder Anwendungsfehler. Die Live-UI-Zeitmarke betrug in diesem einzelnen Test 1.581,5 ms; die Grafikantwort wurde absichtlich angehalten. Physische GPU-Leistung ist damit nicht nachgewiesen.
+
+
 ## Astro Zen Show · 11. Oktober 2026
 
 Umfang vor CRYO-Freischaltung: **36 versionierte Projektdateien**, davon **10 Laufzeitdateien mit 759.765 Bytes** und 93.088 Bytes Start-JavaScript. Das separate Show-Modul verwendet die vorhandenen sechs Szenen ohne zusätzliche Renderer oder Dienste.

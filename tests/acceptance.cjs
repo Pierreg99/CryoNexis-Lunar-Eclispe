@@ -977,10 +977,22 @@ async function terminalRun(browser, url) {
   assert.equal((await page.locator('#terminal-output').innerText()).trim(), '');
   await command('help');
   assert.equal(await page.evaluate(() => document.activeElement.id), 'terminal-input');
+  await run.context.addInitScript(() => { window.__testNow = Date.UTC(2026, 9, 31, 23, 59, 59); Date.now = () => window.__testNow; });
+  await page.reload();
+  assert.match(await command('unlock cryo'), /Vault freigeschaltet/);
+  assert.match(await page.locator('#vault-state').innerText(), /CRYO OFFEN/);
+  assert.match(await command('deposit 1000'), /ERLEDIGT/);
+  await page.reload();
+  assert.match(await page.locator('#vault-state').innerText(), /CRYO OFFEN/);
+  assert.match(await command('withdraw 100'), /ERLEDIGT/);
+  await page.evaluate(() => { window.__testNow = Date.UTC(2026, 10, 1); });
+  await page.waitForFunction(() => document.getElementById('vault-state').textContent === 'GESPERRT');
+  assert.match(await command('unlock cryo'), /endete am 31.10.2026/);
+  assert.match(await command('withdraw 1'), /NICHT AUSGEFÜHRT/);
   await assertNoAnimations(page, 'Terminal outcomes with reduced motion');
   await clean(run);
   await run.context.close();
-  report.runs.push({ name: 'terminal-outcomes', commands: 21 });
+  report.runs.push({ name: 'terminal-outcomes', commands: 22 });
   console.log('PASS terminal outcomes: every help entry, safe syntax, actual receipts, all six tasks and reset');
 }
 

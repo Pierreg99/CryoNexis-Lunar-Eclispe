@@ -10,6 +10,7 @@
   const precise = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 6 });
   const interest = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
   const commands = Object.freeze({
+    unlock: [1, 1, 'unlock cryo', 'unlock cryo', 'Öffnet den Vault bis einschließlich 31.10.2026 UTC unabhängig von Phase, Bindungen und Stabilität. Guthabenlimits gelten weiter; reset entfernt die Freischaltung.'],
     help: [0, 1, 'help [Befehl]', 'help buy', 'Zeigt alle Befehle oder Hilfe für einen einzelnen Befehl.'],
     tasks: [0, 0, 'tasks', 'tasks', 'Zeigt aktuell erfüllte Aufgaben und konkrete nächste Schritte.'],
     status: [0, 0, 'status', 'status', 'Zeigt den aktuellen System- und Simulationszustand.'],
@@ -139,6 +140,8 @@
       case 'history':
         appendTerminal(state.history.length ? state.history.slice(-20).map(function (entry) { return 'T+' + entry.tick * 5 + ' MIN / ' + phases[entry.phase].name + ' / ' + entry.text; }).join('\n') : 'Noch keine Zeitspuren. Deine Entscheidungen schreiben die Geschichte.');
         break;
+      case 'unlock':
+        result = action('unlock', { key: parts[1] }); break;
       case 'buy': case 'sell':
         result = action(command, { id: id, quantity: numeric(parts[2] || '') }); break;
       case 'link': case 'unlink': case 'stabilize':

@@ -62,7 +62,7 @@
       !finite(saved.cash, 0, MONEY_LIMIT) || !precise(saved.cash, 4) || !finite(saved.coherence, 0, 100) || !precise(saved.coherence, 4) ||
       !finite(saved.feesPaid, 0, MONEY_LIMIT) || !precise(saved.feesPaid, 4) ||
       !integer(saved.historySeq, 0, Number.MAX_SAFE_INTEGER) || !Array.isArray(saved.nodes) || saved.nodes.length !== 6 ||
-      !exactKeys(saved.vault, ['balance', 'earned']) || !finite(saved.vault.balance, 0, MONEY_LIMIT) || !precise(saved.vault.balance, 4) ||
+      !exactKeys(saved.vault, Object.prototype.hasOwnProperty.call(saved.vault, 'cryoUnlocked') ? ['balance', 'earned', 'cryoUnlocked'] : ['balance', 'earned']) || ('cryoUnlocked' in saved.vault && typeof saved.vault.cryoUnlocked !== 'boolean') || !finite(saved.vault.balance, 0, MONEY_LIMIT) || !precise(saved.vault.balance, 4) ||
       !finite(saved.vault.earned, 0, MONEY_LIMIT) || !precise(saved.vault.earned, 4) ||
       !Array.isArray(saved.history) || saved.history.length > 40) return false;
     if (!saved.nodes.every((node, index) => exactKeys(node, ['id', 'rawPrice', 'liquidityFactor', 'strength', 'quantity', 'bound', 'change']) && node.id === BASE[index].id &&
@@ -72,7 +72,7 @@
       typeof node.bound === 'boolean' && finite(node.change, -0.6, 0.6) && precise(node.change, 4))) return false;
     let previous = 0;
     let previousTick = 0;
-    const historyTypes = ['tick', 'step', 'phase', 'auto-phase', 'pause', 'resume', 'buy', 'sell', 'link', 'unlink', 'stabilize', 'deposit', 'withdraw'];
+    const historyTypes = ['unlock', 'tick', 'step', 'phase', 'auto-phase', 'pause', 'resume', 'buy', 'sell', 'link', 'unlink', 'stabilize', 'deposit', 'withdraw'];
     if (!saved.history.every(entry => {
       if (!exactKeys(entry, ['id', 'tick', 'type', 'text', 'phase']) || !integer(entry.id, previous + 1, saved.historySeq) || !integer(entry.tick, previousTick, saved.tick) ||
         !integer(entry.phase, 0, 4) || !historyTypes.includes(entry.type) ||
@@ -87,6 +87,8 @@
 
   function create(options) {
     options = options || {};
+    const now = typeof options.now === 'function' ? options.now : Date.now;
+    const unlockDeadline = Date.UTC(2026, 10, 1);
     const seed = integer(options.seed, 0, 4294967295) ? options.seed : 404;
     let state = initial(seed);
     let restored = false;
@@ -142,10 +144,12 @@
         { label: 'Stabilität mindestens 75 (' + display(stability) + ')', met: stability >= 75 },
         { label: 'Kohärenz mindestens 35 (' + display(state.coherence) + ')', met: state.coherence >= 35 }
       ];
-      const open = conditions.every(condition => condition.met);
+      const unlocked = state.vault.cryoUnlocked === true && now() < unlockDeadline;
+      const open = unlocked || conditions.every(condition => condition.met);
+      if (unlocked) conditions.splice(0, conditions.length, { label: 'CRYO-Zugang aktiv bis 31.10.2026, 23:59:59 UTC · reguläre Zugangsbedingungen ausgesetzt', met: true });
       const apr = money(clamp(current.apr + bound * 0.25 + state.coherence * 0.006, 12, 20));
       return { nodes: nodes, portfolioValue: portfolioValue, equity: equity, stability: stability, bound: bound,
-        vault: { open: open, balance: state.vault.balance, apr: apr, earned: state.vault.earned,
+        vault: { open: open, cryoUnlocked: unlocked, unlockDeadline: unlockDeadline, balance: state.vault.balance, apr: apr, earned: state.vault.earned,
           conditions: conditions, accruing: open && state.vault.balance > 0 } };
     }
     function snapshot() {
@@ -208,6 +212,8 @@
 
     function tick(options) {
       options = options || {};
+    const now = typeof options.now === 'function' ? options.now : Date.now;
+    const unlockDeadline = Date.UTC(2026, 10, 1);
       if (state.paused && options.force !== true) return failure('Die Simulation ist pausiert. Ein Einzelschritt bleibt möglich.');
       if (state.tick >= 100000000) return failure('Die maximale simulierte Laufzeit ist erreicht.');
       const before = derived();
@@ -243,6 +249,8 @@
 
     function selectPhase(index, options) {
       options = options || {};
+    const now = typeof options.now === 'function' ? options.now : Date.now;
+    const unlockDeadline = Date.UTC(2026, 10, 1);
       if (!integer(index, 0, 4)) return failure('Diese Phase existiert nicht.');
       if (index === state.phase) return done('Die Phase ' + profile().name + ' ist bereits aktiv.');
       const manual = options.manual !== false;
@@ -264,6 +272,12 @@
 
     function act(type, payload) {
       payload = payload || {};
+      if (type === 'unlock') {
+        if (payload.key !== 'cryo') return failure('Verwende unlock cryo.');
+        if (now() >= unlockDeadline) return failure('Der CRYO-Zugang endete am 31.10.2026 um 23:59:59 UTC. Es gelten wieder die normalen Vault-Bedingungen.');
+        if (!state.vault.cryoUnlocked) { state.vault.cryoUnlocked = true; record('unlock', 'CRYO-Zugang bis einschließlich 31.10.2026 UTC aktiviert.'); }
+        return done('Vault freigeschaltet bis 31.10.2026, 23:59:59 UTC. Alle Ansichten und Aktionen sind verfügbar. Guthaben und Mengenlimits gelten weiter. Nächster Schritt: vault, deposit 1000 oder help.');
+      }
       if (type === 'step') return tick({ force: true });
       if (type === 'reset') {
         state = initial(404); restored = false; restoreError = '';

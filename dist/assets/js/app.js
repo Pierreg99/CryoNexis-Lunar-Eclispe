@@ -81,6 +81,7 @@
     const now = new Date();
     if (clock) { clock.textContent = now.toISOString().slice(11, 19); clock.dateTime = now.toISOString(); }
     syncScenes();
+    if (state.vault.cryoUnlocked && Date.now() >= state.vault.unlockDeadline) renderSimulation(simulation.snapshot());
   }
   function syncScenes() {
     if (window.cinema && typeof window.cinema.getStats === 'function') {
@@ -228,7 +229,7 @@
     setText('eclipse-current', 'Aktuelle Korona: ' + number.format(state.visual.corona * 100) + ' % · ' + state.phaseName);
     setText('hero-temperature', number.format(state.visual.temperature));
     setText('sim-fees', 'HANDELSGEBÜHREN ' + interest.format(state.feesPaid) + ' CNX');
-    setText('vault-state', state.vault.open ? 'ZEITFENSTER OFFEN' : 'GESPERRT');
+    setText('vault-state', state.vault.cryoUnlocked ? 'CRYO OFFEN · BIS 31.10.2026 UTC' : state.vault.open ? 'ZEITFENSTER OFFEN' : 'GESPERRT');
     const ledger = document.querySelector('.vault-ledger');
     if (ledger) ledger.dataset.open = String(state.vault.open);
     setText('vault-balance', interest.format(state.vault.balance) + ' CNX');

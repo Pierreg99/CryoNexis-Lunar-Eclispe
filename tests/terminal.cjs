@@ -52,3 +52,28 @@ console.log('PASS terminal: full Vault task path, time control and closure use t
 assert(run('reset confirm').ok); assert.equal(model.snapshot().cash, 100000); assert.equal(model.snapshot().vault.balance, 0);
 assert.equal(model.snapshot().history.length, 0);
 console.log('PASS terminal: explicit reset clears the model and reports its new starting state');
+
+let now = Date.UTC(2026, 9, 31, 23, 59, 59, 999);
+const unlocked = Simulation.create({ now: () => now });
+const unlockApi = { ...api, snapshot: unlocked.snapshot, action: unlocked.act };
+assert.equal(Terminal.run('unlock wrong', unlockApi).ok, false);
+assert.equal(unlocked.snapshot().vault.open, false);
+assert(Terminal.run('unlock cryo', unlockApi).ok);
+assert(unlocked.snapshot().vault.cryoUnlocked);
+assert(unlocked.act('deposit', { amount: 1000 }).ok);
+assert(unlocked.act('withdraw', { amount: 100 }).ok);
+assert.equal(unlocked.act('deposit', { amount: 1000000 }).ok, false);
+const restored = Simulation.create({ saved: unlocked.serialize(), now: () => now });
+assert(restored.snapshot().restored && restored.snapshot().vault.open);
+now = Date.UTC(2026, 10, 1);
+assert.equal(restored.snapshot().vault.open, false);
+const expired = restored.serialize();
+assert.equal(Terminal.run('unlock cryo', { ...unlockApi, snapshot: restored.snapshot, action: restored.act }).ok, false);
+assert.equal(restored.act('withdraw', { amount: 1 }).ok, false);
+assert.deepEqual(restored.serialize(), expired);
+assert.equal(restored.snapshot().vault.balance, 900);
+now -= 1;
+assert(restored.snapshot().vault.open);
+restored.act('reset');
+assert.equal(restored.snapshot().vault.cryoUnlocked, false);
+console.log('PASS terminal: CRYO unlock, persisted access, balance limits, exact UTC expiry and reset');

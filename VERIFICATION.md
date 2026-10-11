@@ -1,8 +1,14 @@
 # Prüfung · CRYONEXUS
 
+## CRYO-Freischaltung · 11. Oktober 2026
+
+Aktueller Umfang: **36 Projektdateien**, **10 Laufzeitdateien mit 761.814 Bytes**, davon 95.122 Bytes Start-JavaScript. Der Befehl `unlock cryo` ist bis zum 31.10.2026 einschließlich UTC aktivierbar. Die persistierte Freischaltung wird bei jeder Vault-Prüfung gegen die Gerätezeit geprüft; normale Zugangsbedingungen gelten nach Ablauf wieder. Alte Speicherstände bleiben kompatibel. Die Freischaltung erzeugt kein Guthaben.
+
+Zehn Modell- und fünf Terminal-Testgruppen bestanden einschließlich Speicherung, Guthabenlimits, Reset und der Grenze zwischen 31.10.2026 23:59:59.999 UTC und 01.11.2026 00:00 UTC.
+
 ## Astro Zen Show · 11. Oktober 2026
 
-Aktueller Umfang: **36 versionierte Projektdateien**, davon **10 Laufzeitdateien mit 759.765 Bytes** und 93.088 Bytes Start-JavaScript. Das separate Show-Modul verwendet die vorhandenen sechs Szenen ohne zusätzliche Renderer oder Dienste.
+Umfang vor CRYO-Freischaltung: **36 versionierte Projektdateien**, davon **10 Laufzeitdateien mit 759.765 Bytes** und 93.088 Bytes Start-JavaScript. Das separate Show-Modul verwendet die vorhandenen sechs Szenen ohne zusätzliche Renderer oder Dienste.
 
 Zehn Modell- und vier Terminal-Testgruppen bestanden. Drei gezielte HTTP-Browserdurchläufe für Start, Terminal und Show bestanden; anschließend bestanden zwei Show-Durchläufe einschließlich tatsächlicher Darstellung aller sechs Szenen. Geprüft: mobile Bedienung ohne horizontalen Überlauf, 18-Sekunden-Wechsel mit kontrollierter Browserzeit, Pause, manuelle Navigation, reduzierte Bewegung, Escape, Fokus-Rückkehr und unveränderte Modelldaten bei Show-Navigation. Die sechs gerenderten Szenen hielten das Limit von zwei WebGL-Kontexten ein. Die lokale UI-Zeitmarke im verzögerten Grafiktest lag bei 238,2 ms, ohne Zusage für andere Geräte. Mobile Bedienung und Finsternis im Show-Modus wurden zusätzlich visuell geprüft.
 

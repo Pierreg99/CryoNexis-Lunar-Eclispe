@@ -103,3 +103,9 @@ Ertrag je offenem Takt = Vault-Guthaben × Jahreszins / 100 × 5 / 525.600
 Bei einer frischen Simulation mit drei Bindungen und manuell gewählter Korona beträgt der Jahreszins **19,164 %**. Einlagern und Entnehmen verschieben Geld zwischen Cash und Vault, ohne das Gesamtvermögen zu verändern. Geschlossene Fenster bewahren Geld, buchen aber keine Zinsen.
 
 **Weiter:** [Modell-API](Architektur.md#modell-api) · [Bedienung](Bedienung.md) · [Tests und Qualität](Tests-und-Qualitaet.md)
+
+## Zeitlich begrenzter CRYO-Zugang
+
+Mit **`unlock cryo`** öffnest du den Vault unabhängig von Phase, Bindungen, Stabilität und Kohärenz bis einschließlich **31. Oktober 2026, 23:59:59 UTC**. Alle Ansichten und vorhandenen Aktionen bleiben nutzbar; Einlagern, Entnehmen und simulierte Zinsen funktionieren im offenen Vault. Guthaben- und Mengenlimits gelten weiterhin. `vault` zeigt den Zugang und das Ablaufdatum; `help` erklärt alle 22 Befehle.
+
+Die Freischaltung wird lokal gespeichert. Ab **1. November 2026, 00:00 UTC** gelten wieder die normalen Zugangsbedingungen; Guthaben bleibt erhalten. `reset confirm` entfernt auch die Freischaltung. Das Datum folgt der Geräteuhr der lokalen Simulation, nicht einer serverseitigen Zugangskontrolle.

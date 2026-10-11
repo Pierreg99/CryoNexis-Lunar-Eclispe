@@ -56,3 +56,9 @@ Fehler beginnen mit **NICHT AUSGEFÜHRT**, erklären den Grund und verweisen auf
 `resume` hebt reduzierte Bewegung nicht auf: Dort bleibt die Zeit manuell. Die Phase Reset löscht keine Daten. Pfeil hoch/runter ruft frühere Terminal-Eingaben auf; diese Eingabehistorie ist von den gespeicherten Simulations-Zeitspuren getrennt.
 
 **Weiter:** [Erster Vault](Schnellstart.md#dein-erster-vault) · [Regeln](Simulation.md) · [FAQ](FAQ.md)
+
+## Zeitlich begrenzter CRYO-Zugang
+
+Mit **`unlock cryo`** öffnest du den Vault unabhängig von Phase, Bindungen, Stabilität und Kohärenz bis einschließlich **31. Oktober 2026, 23:59:59 UTC**. Alle Ansichten und vorhandenen Aktionen bleiben nutzbar; Einlagern, Entnehmen und simulierte Zinsen funktionieren im offenen Vault. Guthaben- und Mengenlimits gelten weiterhin. `vault` zeigt den Zugang und das Ablaufdatum; `help` erklärt alle 22 Befehle.
+
+Die Freischaltung wird lokal gespeichert. Ab **1. November 2026, 00:00 UTC** gelten wieder die normalen Zugangsbedingungen; Guthaben bleibt erhalten. `reset confirm` entfernt auch die Freischaltung. Das Datum folgt der Geräteuhr der lokalen Simulation, nicht einer serverseitigen Zugangskontrolle.

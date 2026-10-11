@@ -10,7 +10,7 @@ Eine deutschsprachige, prozedurale 3D-Erfahrung zwischen Eis, Finsternis und Sch
 
 | Erlebnis | Architektur | Auslieferung | Prüfung |
 | --- | --- | --- | --- |
-| 6 prozedurale Szenen | 4 getrennte Schichten | 759.765 Bytes in `dist/` | 10 Modell- und 4 Terminal-Testgruppen; gezielte Browserprüfungen bestanden |
+| 6 prozedurale Szenen | 4 getrennte Schichten | 761.814 Bytes in `dist/` | 10 Modell- und 5 Terminal-Testgruppen; gezielte Browserprüfungen bestanden |
 
 ## In einer Minute starten
 
@@ -61,7 +61,7 @@ flowchart LR
     S -->|vorhandene Geometrie| E
 ```
 
-Die Oberfläche enthält keine 3D-Geometrie. Das Modell kennt weder DOM noch Speicher. Die Engine besitzt höchstens zwei WebGL-Kontexte und rendert ausschließlich sichtbare Szenen. GPU-Daten ausgeblendeter Szenen und große Puffer freier Slots werden freigegeben; CPU-Szenen bleiben gecacht. Viertelauflösender Bloom verwendet zwei permanente Targets ohne Allokationen pro Frame. Die Oberfläche startet mit 93.088 Bytes JavaScript; Three.js und Szenen (632.861 Bytes) laden nach dem ersten UI-Paint nach. Die frühere künstliche 2,4-Sekunden-Boot-Sequenz entfällt. Bei reduzierter Bewegung werden die Grafikskripte erst nach Aktivierung der Bewegung geladen. Alle Skripte laden klassisch und lokal, ohne Bundler oder ES-Modulimporte.
+Die Oberfläche enthält keine 3D-Geometrie. Das Modell kennt weder DOM noch Speicher. Die Engine besitzt höchstens zwei WebGL-Kontexte und rendert ausschließlich sichtbare Szenen. GPU-Daten ausgeblendeter Szenen und große Puffer freier Slots werden freigegeben; CPU-Szenen bleiben gecacht. Viertelauflösender Bloom verwendet zwei permanente Targets ohne Allokationen pro Frame. Die Oberfläche startet mit 95.122 Bytes JavaScript; Three.js und Szenen (632.861 Bytes) laden nach dem ersten UI-Paint nach. Die frühere künstliche 2,4-Sekunden-Boot-Sequenz entfällt. Bei reduzierter Bewegung werden die Grafikskripte erst nach Aktivierung der Bewegung geladen. Alle Skripte laden klassisch und lokal, ohne Bundler oder ES-Modulimporte.
 
 **[Modulverträge →](docs/wiki/Architektur.md) · [Szenen und Shader →](docs/wiki/Szenen.md) · [Farben und Gestaltung →](docs/wiki/Designsystem.md)**
 
@@ -90,3 +90,9 @@ Three.js r149 ist lokal enthalten und unter MIT lizenziert: [Lizenz](dist/assets
 Der Button **ASTRO ZEN SHOW** startet eine ruhige Rundreise durch die sechs bestehenden Szenen. Alle 18 Sekunden wechselt die Ansicht. **Pause**, **Zurück**, **Weiter** und **Beenden** bleiben erreichbar; Escape beendet die Show und stellt Position und Fokus wieder her. Klang lässt sich separat einschalten. Die Show selbst verändert keine Simulationswerte; der vorherige Zeitmodus läuft weiter.
 
 Bei reduzierter Bewegung bleiben die ruhigen Hintergrundansichten ohne 3D-Download erhalten und du wechselst manuell. Verborgene Tabs unterbrechen den Show-Timer. Das eigene Modul `astro-zen.js` verwendet die bestehenden Renderer und benötigt keine externen Dienste.
+
+## Zeitlich begrenzter CRYO-Zugang
+
+Mit **`unlock cryo`** öffnest du den Vault unabhängig von Phase, Bindungen, Stabilität und Kohärenz bis einschließlich **31. Oktober 2026, 23:59:59 UTC**. Alle Ansichten und vorhandenen Aktionen bleiben nutzbar; Einlagern, Entnehmen und simulierte Zinsen funktionieren im offenen Vault. Guthaben- und Mengenlimits gelten weiterhin. `vault` zeigt den Zugang und das Ablaufdatum; `help` erklärt alle 22 Befehle.
+
+Die Freischaltung wird lokal gespeichert. Ab **1. November 2026, 00:00 UTC** gelten wieder die normalen Zugangsbedingungen; Guthaben bleibt erhalten. `reset confirm` entfernt auch die Freischaltung. Das Datum folgt der Geräteuhr der lokalen Simulation, nicht einer serverseitigen Zugangskontrolle.

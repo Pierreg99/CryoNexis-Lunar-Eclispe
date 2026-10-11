@@ -188,7 +188,7 @@
       if (type !== 'buy' && type !== 'sell') return reject('Für diesen Vorgang gibt es keine Handelsquote.');
       const index = findNode(id);
       if (index < 0) return reject('Dieser Knoten existiert nicht.');
-      if (!quantityValid(quantity)) return reject('Die Menge muss positiv, höchstens 1.000 CNX und auf sechs Nachkommastellen begrenzt sein.');
+      if (!quantityValid(quantity)) return reject('Die Menge muss positiv, höchstens 1.000 Einheiten und auf sechs Nachkommastellen begrenzt sein.');
       const node = derived().nodes[index];
       const gross = money(node.price * quantity);
       if (gross <= 0) return reject('Diese Menge liegt unter der vierstelligen Geldpräzision.');

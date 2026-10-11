@@ -297,55 +297,14 @@
   function terminalCommand(raw) {
     scriptStopped = true;
     finishJob(terminalJob);
-    const parts = raw.trim().split(/\s+/);
-    const command = parts[0].toLowerCase();
-    if (!command) return;
-    if (command === 'clear') { if (terminalOutput) terminalOutput.replaceChildren(); return; }
+    const response = window.CryoTerminal.run(raw, {
+      snapshot: simulation.snapshot, action: action, selectPhase: selectPhase,
+      quote: simulation.quote, phases: phases, sceneCount: builtScenes.size, reduced: motion.matches
+    });
+    if (!response) return;
+    if (response.clear) { if (terminalOutput) terminalOutput.replaceChildren(); return; }
     appendTerminal('cryo@vault:~$ ' + raw.trim(), 'system');
-    const id = (parts[1] || '').toUpperCase();
-    let result;
-    switch (command) {
-      case 'help':
-        appendTerminal('help / status / nodes / phase / eclipse / vault / clear\nportfolio → Guthaben, Positionen, Gebühren\nhistory → Deine Zeitspuren\nphase 1..5 → Phase wählen (kostet Kohärenz)\nbuy ID Menge / sell ID Menge → Handeln\nlink ID / unlink ID → Zeitbindung (1.200 / +400 CNX)\nstabilize ID → Knoten stärken (700 CNX)\ndeposit Betrag / withdraw Betrag → Vault\npause / resume / step → Simulationszeit steuern\nreset confirm → Lokalen Fortschritt löschen\nBeispiel: buy CN-ALPHA-01 2,5\nAlle Werte sind fiktiv, lokal und deterministisch.');
-        break;
-      case 'status':
-        appendTerminal('KAMMER 04 · LOKALE SIMULATION\nUTC ' + new Date().toISOString().slice(11, 19) + '\nSzenen: ' + builtScenes.size + '/6 · Phase: ' + state.phaseName + '\nKerntemperatur: ' + number.format(state.visual.temperature) + ' °C\nStabilität: ' + number.format(state.stability) + ' % · Kohärenz: ' + number.format(state.coherence) + ' %\nSimulationszeit: ' + state.minutes + ' Minuten · Zyklus ' + state.cycle + '\nNetzwerk: lokal · Marktdaten: simuliert · ' + (state.paused ? 'PAUSIERT' : motion.matches ? 'MANUELLE ZEIT' : 'AKTIV'));
-        break;
-      case 'nodes':
-        appendTerminal(state.nodes.map(function (node) { return node.id + ' / ' + node.sector + ' / ' + number.format(node.price) + ' CNX / Stärke ' + number.format(node.strength) + ' % / Bestand ' + precise.format(node.quantity) + (node.bound ? ' / GEBUNDEN' : ''); }).join('\n'));
-        break;
-      case 'phase':
-        if (parts.length > 1) {
-          const index = /^[1-5]$/.test(parts[1]) ? Number(parts[1]) - 1 : phases.findIndex(function (phase) { return phase.name.toLowerCase() === parts[1].toLowerCase(); });
-          result = index >= 0 ? selectPhase(index, true) : announce({ ok: false, message: 'Phase als Zahl 1–5 oder Phasenname angeben.' });
-        } else appendTerminal('Aktive Phase: ' + state.phaseName + ' / ' + phases[phaseIndex].time + '\n' + phases.map(function (phase, index) { return (index === phaseIndex ? '› ' : '  ') + (index + 1) + ' ' + phase.name + ' ' + phase.time; }).join('\n') + '\nManuelle Wechsel verbrauchen Kohärenz; automatische Wechsel nicht.');
-        break;
-      case 'eclipse':
-        appendTerminal('TOTALE SONNENFINSTERNIS / ' + state.phaseName + '\nAktuelle Korona: ' + number.format(state.visual.corona * 100) + ' %\nKalibrierte Totalität: 99,97 % · Brechungsindex: 1,3091\nKristallschollen: 46 · Kammer: 04\nStrahlungsfluss: ' + number.format(state.visual.flux * 100) + ' % · Kern: ' + number.format(state.visual.temperature) + ' °C');
-        break;
-      case 'vault':
-        appendTerminal('VAULT / ' + (state.vault.open ? 'ZUGRIFF GEWÄHRT' : 'ZEITFENSTER GESPERRT') + '\n' + state.vault.conditions.map(function (condition) { return (condition.met ? '✓ ' : '○ ') + condition.label; }).join('\n') + '\nGuthaben ' + interest.format(state.vault.balance) + ' CNX · Ertrag ' + interest.format(state.vault.earned) + ' CNX\nSimulierter Jahreszins ' + number.format(state.vault.apr) + ' % · nur während des offenen Fensters\nLokale Simulation. Keine Wallet erforderlich.');
-        break;
-      case 'portfolio':
-        appendTerminal('VERMÖGEN ' + number.format(state.equity) + ' CNX\nVerfügbar ' + number.format(state.cash) + ' CNX · Positionen ' + number.format(state.portfolioValue) + ' CNX · Vault ' + interest.format(state.vault.balance) + ' CNX\nHandelsgebühren bisher ' + interest.format(state.feesPaid) + ' CNX\n' + state.nodes.map(function (node) { return node.id + ': ' + precise.format(node.quantity) + ' / ' + number.format(node.positionValue) + ' CNX'; }).join('\n'));
-        break;
-      case 'history':
-        appendTerminal(state.history.length ? state.history.slice(-20).map(function (entry) { return 'T+' + entry.tick * 5 + ' MIN / ' + phases[entry.phase].name + ' / ' + entry.text; }).join('\n') : 'Noch keine Zeitspuren. Deine Entscheidungen schreiben die Geschichte.');
-        break;
-      case 'buy': case 'sell':
-        result = action(command, { id: id, quantity: numeric(parts[2] || '') }); break;
-      case 'link': case 'unlink': case 'stabilize':
-        result = action(command, { id: id }); break;
-      case 'deposit': case 'withdraw':
-        result = action(command, { amount: numeric(parts[1] || '') }); break;
-      case 'pause': case 'resume': case 'step':
-        result = action(command); break;
-      case 'reset':
-        result = parts[1] === 'confirm' ? action('reset') : announce({ ok: false, message: '„reset confirm“ löscht alle lokalen Käufe, Bindungen und Zeitspuren und startet mit 100.000 CNX.' }); break;
-      default:
-        appendTerminal('Unbekannter Befehl: „' + raw.trim() + '“. Mit „help“ findest du alle Befehle.', 'error');
-    }
-    if (result) appendTerminal(result.message, result.ok ? 'response' : 'error');
+    appendTerminal(response.text, response.ok ? 'response' : 'error');
   }
   const history = [];
   let historyIndex = 0;

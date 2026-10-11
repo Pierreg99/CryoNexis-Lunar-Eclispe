@@ -29,7 +29,7 @@
       const definition = definitions.get(entry.id);
       if (!definition) throw new Error('Missing capability');
       view.module = definition.mount({ container: view.content, element: element, button: button,
-        command: api.command, phases: api.phases });
+        command: api.command, phases: api.phases, quote: api.quote });
       view.loaded = true;
       render(current);
     }).catch(function () {

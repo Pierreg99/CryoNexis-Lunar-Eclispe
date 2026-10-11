@@ -565,15 +565,15 @@
 
   let expeditionLoading = false;
   const capabilitySources = {
-    observatory: 'assets/js/capabilities/observatory.js?v=49218de1',
-    resonance: 'assets/js/capabilities/resonance.js?v=4247d205',
+    observatory: 'assets/js/capabilities/observatory.js?v=c26e71b0',
+    resonance: 'assets/js/capabilities/resonance.js?v=706b7e5a',
     archive: 'assets/js/capabilities/archive.js?v=f05b5d10'
   };
   function startExpedition(next) {
     if ((!next.vault.cryoUnlocked && !next.expedition.observed.length && !next.expedition.networkUnlocked) || expeditionLoading || window.CryoExpedition) return;
     expeditionLoading = true;
-    loadScript('assets/js/expedition.js?v=7ba0595e').then(function () {
-      window.CryoExpedition.start({ subscribe: simulation.subscribe, command: terminalCommand, phases: phases,
+    loadScript('assets/js/expedition.js?v=8f21a372').then(function () {
+      window.CryoExpedition.start({ subscribe: simulation.subscribe, command: terminalCommand, phases: phases, quote: simulation.quote,
         load: function (id) { return loadScript(capabilitySources[id]); } });
     }).catch(function () {
       expeditionLoading = false;

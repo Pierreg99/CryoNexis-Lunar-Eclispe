@@ -1008,7 +1008,7 @@ async function capabilitiesRun(browser, url) {
   const pattern = '**/capabilities/observatory.js?*';
   await page.route(pattern, route => route.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));
   assert.match(await command('cryo unlock'), /freigeschaltet/);
-  await page.waitForFunction(() => document.querySelector('#capability-observatory button').hidden === false);
+  await page.waitForFunction(() => document.querySelector('#capability-observatory button')?.hidden === false);
   assert.match(await page.locator('#capability-observatory').innerText(), /Laden fehlgeschlagen/);
   await page.unroute(pattern);
   await page.locator('#capability-observatory button', { hasText: 'Erneut laden' }).click();
@@ -1018,7 +1018,7 @@ async function capabilitiesRun(browser, url) {
   await page.locator('#capability-observatory button', { hasText: 'Diamantring' }).click();
   await page.locator('#capability-observatory button', { hasText: 'Aktuelle Phase erfassen' }).click();
   assert(!run.requests.some(url => /capabilities\/resonance/.test(url)), 'Position prerequisite must be enforced');
-  await command('buy CN-BOREALIS 1');
+  await page.locator('#capability-observatory button', { hasText: '1 Borealis kaufen' }).click();
   await page.locator('#capability-resonance .resonance-node').first().waitFor();
   for (const phase of ['Korona', 'Freisteller', 'Reset']) {
     await page.locator('#capability-observatory button', { hasText: phase }).click();
@@ -1030,7 +1030,8 @@ async function capabilitiesRun(browser, url) {
     await row.getByRole('button', { name: 'Kalibrieren', exact: true }).click();
   }
   assert(!run.requests.some(url => /capabilities\/archive/.test(url)), 'Vault yield prerequisite must be enforced');
-  await command('deposit 1000'); await command('step');
+  await page.locator('#capability-resonance button', { hasText: '1.000 CNX in den Vault' }).click();
+  await page.locator('#capability-resonance button', { hasText: '+5 Simulationsminuten' }).click();
   await page.locator('#capability-archive button', { hasText: 'Zeitspur 004 entschlüsseln' }).click();
   assert.match(await page.locator('#capability-archive').innerText(), /Archiv dauerhaft entdeckt/);
   const progress = (await readSimulation(page)).state.expedition;

@@ -3,8 +3,13 @@
   CryoExpedition.register('resonance', { mount: function (api) {
     const status = api.element('p', '', api.container), list = api.element('div', '', api.container);
     const views = new Map();
+    const vault = api.element('div', '', api.container); vault.className = 'simulation-controls';
+    const deposit = api.button(vault, '1.000 CNX in den Vault einlagern', function () { api.command('deposit 1000'); });
+    const step = api.button(vault, '+5 Simulationsminuten · Ertrag berechnen', function () { api.command('step'); });
     return { update: function (state) {
-      status.textContent = 'Resonanzbaken: ' + state.expedition.calibrated.length + '/6 · Kalibrierte Knoten verstärken das Nexus-Signal.';
+      deposit.disabled = !state.vault.cryoUnlocked || !state.expedition.networkUnlocked || state.cash < 1000;
+      step.disabled = !state.vault.cryoUnlocked || !state.expedition.networkUnlocked;
+      status.textContent = 'Erfasste Phasen: ' + state.expedition.observed.length + '/5 · Vault-Ertrag: ' + state.vault.earned.toFixed(4) + ' CNX · Resonanzbaken: ' + state.expedition.calibrated.length + '/6 · Kalibrierte Knoten verstärken das Nexus-Signal.';
       state.nodes.forEach(function (node) {
         if (!views.has(node.id)) {
           const row = api.element('div', '', list); row.className = 'resonance-node';

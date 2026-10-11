@@ -10,7 +10,7 @@
     phase: 0, coherence: .8, stability: .8, flux: .35, corona: .45, temperature: -268,
     bindings: [false, false, false, false, false, false],
     strengths: [.84, .92, .78, .96, .68, .88], holdings: [0, 0, 0, 0, 0, 0],
-    vaultOpen: false, vaultPower: .2, echoes: 0
+    vaultOpen: false, vaultPower: .2, echoes: 0, surveyCount: 0, calibrated: [false, false, false, false, false, false], archiveDecoded: false
   };
   // Only validate display inputs here. Decisions and state transitions belong to the model.
   const unit = (value, fallback) => Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : fallback;
@@ -27,6 +27,9 @@
       flux: unit(data.flux, previous.flux), corona: unit(data.corona, previous.corona),
       temperature: Number.isFinite(data.temperature) ? data.temperature : previous.temperature,
       bindings: six('bindings', true), strengths: six('strengths'), holdings: six('holdings'),
+      surveyCount: Number.isInteger(data.surveyCount) ? Math.max(0, Math.min(5, data.surveyCount)) : previous.surveyCount,
+      calibrated: six('calibrated', true),
+      archiveDecoded: typeof data.archiveDecoded === 'boolean' ? data.archiveDecoded : previous.archiveDecoded,
       vaultOpen: typeof data.vaultOpen === 'boolean' ? data.vaultOpen : previous.vaultOpen,
       vaultPower: unit(data.vaultPower, previous.vaultPower),
       echoes: Number.isFinite(data.echoes) ? Math.max(0, data.echoes) : previous.echoes

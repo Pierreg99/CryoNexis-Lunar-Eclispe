@@ -44,7 +44,7 @@ async function staticAcceptance() {
   assert.match(html, /<html lang="de"/);
   const css = await fs.readFile(path.join(dist, 'assets/css/main.css'), 'utf8');
   assert.deepEqual(Array.from(css.matchAll(/\/\*\s*(\d{2})\s*[—-]/g), match => Number(match[1])),
-    Array.from({ length: 20 }, (_, index) => index + 1));
+    Array.from({ length: 21 }, (_, index) => index + 1));
   const app = await fs.readFile(path.join(dist, 'assets/js/app.js'), 'utf8');
   assert.doesNotMatch(app, /\bTHREE\b|\bcinema\.boot\s*\(|\bWebGLRenderer\b/,
     'The interface layer must not construct 3D scenes');
@@ -984,6 +984,59 @@ async function terminalRun(browser, url) {
   console.log('PASS terminal outcomes: every help entry, safe syntax, actual receipts, all six tasks and reset');
 }
 
+async function zenRun(browser, url) {
+  const run = await open(browser, url, { reduced: true, viewport: { width: 390, height: 844 } });
+  const { page } = run;
+  const before = await readSimulation(page);
+  await page.locator('#zen-start').click();
+  assert.equal(await page.locator('main').evaluate(el => el.inert), true);
+  assert.equal(await page.locator('#zen-pause').isDisabled(), true);
+  for (let i = 0; i < 6; i++) {
+    assert.match(await page.locator('#zen-status').innerText(), new RegExp('^' + (i + 1) + '/6'));
+    await page.locator('#zen-next').click();
+  }
+  assert.deepEqual((await readSimulation(page)).raw, before.raw, 'Show navigation must not mutate the model');
+  assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  await page.screenshot({ path: path.join(artifacts, 'astro-zen-mobile.png') });
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#zen-controls').isHidden(), true);
+  assert.equal(await page.locator('main').evaluate(el => el.inert), false);
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'zen-start');
+  await page.clock.install();
+  await page.locator('#zen-start').click();
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.locator('#zen-pause').click();
+  await page.clock.fastForward(18001);
+  assert.match(await page.locator('#zen-status').innerText(), /^2\/6/);
+  await page.locator('#zen-pause').click();
+  await page.clock.fastForward(18001);
+  assert.match(await page.locator('#zen-status').innerText(), /^2\/6/);
+  await page.locator('#zen-prev').click();
+  assert.match(await page.locator('#zen-status').innerText(), /^1\/6/);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.clock.fastForward(18001);
+  assert.match(await page.locator('#zen-status').innerText(), /^1\/6/);
+  await page.locator('#zen-stop').click();
+  await clean(run);
+  await run.context.close();
+  report.runs.push({ name: 'astro-zen-tour' });
+  const animated = await open(browser, url, { viewport: { width: 640, height: 480 } });
+  await animated.page.locator('#zen-start').click();
+  await animated.page.locator('#zen-pause').click();
+  for (const id of sceneIds) {
+    await animated.page.waitForFunction(id => cinema.getStats().scenes.some(scene => scene.id === id && scene.frames > 0 && scene.running), id);
+    const stats = await animated.page.evaluate(() => cinema.getStats());
+    assert(stats.contexts <= 2 && stats.running <= 2);
+    if (id === 'cn-eclipse') await animated.page.screenshot({ path: path.join(artifacts, 'astro-zen-eclipse.png') });
+    await animated.page.locator('#zen-next').click();
+  }
+  await animated.page.locator('#zen-stop').click();
+  await clean(animated);
+  await animated.context.close();
+  report.runs.push({ name: 'astro-zen-rendered-scenes' });
+  console.log('PASS Astro Zen: six scenes, automatic advance, pause, reduced motion, escape, focus and unchanged model');
+}
+
 async function startupRun(browser, url) {
   const context = await browser.newContext({ viewport: { width: 640, height: 360 }, reducedMotion: 'no-preference' });
   await context.addInitScript(instrument);
@@ -1050,8 +1103,8 @@ async function bootFailsafe(browser, url) {
 }
 
 async function main() {
-  assert(Array.from(suites).every(suite => ['all', 'desktop', 'mobile', 'reduced', 'simulation', 'recovery', 'boot', 'gpu', 'startup', 'terminal'].includes(suite)),
-    'Unknown ACCEPTANCE_SUITE; use all, desktop, mobile, reduced, simulation, recovery, boot, gpu, startup or terminal');
+  assert(Array.from(suites).every(suite => ['all', 'desktop', 'mobile', 'reduced', 'simulation', 'recovery', 'boot', 'gpu', 'startup', 'terminal', 'zen'].includes(suite)),
+    'Unknown ACCEPTANCE_SUITE; use all, desktop, mobile, reduced, simulation, recovery, boot, gpu, startup, terminal or zen');
   report.suites = Array.from(suites);
   await fs.mkdir(artifacts, { recursive: true });
   await staticAcceptance();
@@ -1107,6 +1160,7 @@ async function main() {
     if (enabled('boot')) await bootFailsafe(browser, local);
     if (enabled('startup')) await startupRun(browser, local);
     if (enabled('terminal')) await terminalRun(browser, local);
+    if (enabled('zen')) await zenRun(browser, local);
     console.log(`PASS payload ${report.payloadBytes} bytes; Chromium ${report.browser}; ${report.runs.length} browser runs; ${report.blocked.length} policy-blocked runs`);
     if (!fileAllowed && process.env.REQUIRE_FILE_TEST === '1') throw new Error('Required file:// browser validation was blocked by administrator policy');
     report.status = 'passed';

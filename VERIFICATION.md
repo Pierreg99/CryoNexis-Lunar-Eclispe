@@ -1,8 +1,14 @@
 # Prüfung · CRYONEXUS
 
+## Astro Zen Show · 11. Oktober 2026
+
+Aktueller Umfang: **36 versionierte Projektdateien**, davon **10 Laufzeitdateien mit 759.765 Bytes** und 93.088 Bytes Start-JavaScript. Das separate Show-Modul verwendet die vorhandenen sechs Szenen ohne zusätzliche Renderer oder Dienste.
+
+Zehn Modell- und vier Terminal-Testgruppen bestanden. Drei gezielte HTTP-Browserdurchläufe für Start, Terminal und Show bestanden; anschließend bestanden zwei Show-Durchläufe einschließlich tatsächlicher Darstellung aller sechs Szenen. Geprüft: mobile Bedienung ohne horizontalen Überlauf, 18-Sekunden-Wechsel mit kontrollierter Browserzeit, Pause, manuelle Navigation, reduzierte Bewegung, Escape, Fokus-Rückkehr und unveränderte Modelldaten bei Show-Navigation. Die sechs gerenderten Szenen hielten das Limit von zwei WebGL-Kontexten ein. Die lokale UI-Zeitmarke im verzögerten Grafiktest lag bei 238,2 ms, ohne Zusage für andere Geräte. Mobile Bedienung und Finsternis im Show-Modus wurden zusätzlich visuell geprüft.
+
 ## Terminal-Erweiterung · 11. Oktober 2026
 
-Aktueller Umfang: **35 versionierte Projektdateien**, davon **9 Laufzeitdateien mit 754.345 Bytes**. Die vier Startskripte umfassen 89.514 Bytes; Three.js und Szenen bleiben verzögert geladen. Das eigenständige `terminal.js` enthält Eingabeprüfung, Hilfe, Ergebnisbelege und den aus der Simulation abgeleiteten Aufgabenstand.
+Umfang vor Astro Zen: **35 versionierte Projektdateien**, davon **9 Laufzeitdateien mit 754.345 Bytes**. Die vier Startskripte umfassen 89.514 Bytes; Three.js und Szenen bleiben verzögert geladen. Das eigenständige `terminal.js` enthält Eingabeprüfung, Hilfe, Ergebnisbelege und den aus der Simulation abgeleiteten Aufgabenstand.
 
 `ACCEPTANCE_SUITE=terminal,startup,simulation npm test` bestand zehn Modell-Testgruppen, vier Terminal-Testgruppen und fünf HTTP-Browserdurchläufe. Geprüft wurden alle 21 Befehle und ihre Einzelhilfe, zustandsneutrale Lese- und Fehlerfälle, genaue Handelsbelege, vollständiger Aufgaben-/Vault-Ablauf, bestätigter Reset, Speicherung und sichtbare Folgen in allen sechs Szenen. Die UI-Zeitmarke lag beim absichtlich verzögerten Grafikdownload lokal bei 285,6 ms; dies ist keine Ladezeit-Zusage für andere Geräte.
 

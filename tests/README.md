@@ -21,3 +21,5 @@ The GPU suite uses DPR 2, visits every scene in both directions, resizes to 1920
 The default uses SwiftShader for consistent software rendering. Its measured frame rate is diagnostic and does not establish performance on a physical GPU. Set `USE_SOFTWARE_GPU=0` to use the browser's normal graphics backend. Known Chromium `GPU stall due to ReadPixels` screenshot warnings are retained as `environmentWarnings` in the report; application warnings and errors fail the tests.
 
 Both `file://` and HTTP are tested. If a managed Chromium policy blocks `file://` with `ERR_BLOCKED_BY_ADMINISTRATOR`, the report explicitly records the blocked runs and continues HTTP validation. The harness preserves that policy. Set `REQUIRE_FILE_TEST=1` to return a failing exit status when file navigation is blocked.
+
+`ACCEPTANCE_SUITE=zen node tests/acceptance.cjs` prüft mobile Show-Steuerung, sechs manuelle Wechsel, automatischen Wechsel, Pause, reduzierte Bewegung, Escape, Fokus-Rückkehr, unveränderten Modellzustand sowie gerenderte Szenen mit höchstens zwei WebGL-Kontexten.

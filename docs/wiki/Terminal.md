@@ -9,6 +9,8 @@ Das Terminal ist eine zweite Bedienoberfläche desselben Modells. Ein Kommando f
 | Befehl | Ergebnis |
 | --- | --- |
 | `help` | Alle Befehle und ein Handelsbeispiel |
+| `help buy` (oder anderer Befehl) | Zweck, genaue Syntax, Beispiel und Grenzen |
+| `tasks` | Sechs Aufgaben mit aktuellem Erfüllungsstand und nächsten Schritten |
 | `status` | Uhrzeit, Szenen, Phase, Temperatur, Stabilität, Kohärenz und Simulationszeit |
 | `nodes` | Sechs Knoten mit Preis, Stärke, Bestand und Bindung |
 | `phase` | Aktuelle Phase und nummerierte Zeitlinie |
@@ -31,6 +33,14 @@ Das Terminal ist eine zweite Bedienoberfläche desselben Modells. Ein Kommando f
 | `withdraw Betrag` | `withdraw 250` |
 
 Positive Dezimalzahlen können Komma oder Punkt enthalten. Keine Tausendertrennzeichen, Vorzeichen oder Exponentialschreibweise verwenden. Handelsmengen besitzen höchstens sechs, Geldbeträge höchstens vier Nachkommastellen. Fehler verändern den Modellzustand nicht.
+
+## Verständliche Ergebnisse
+
+Jede erfolgreiche Änderung liefert einen Beleg. Handel zeigt Einheiten, Kurswert, Slippage, Gebühr, tatsächlichen Gesamtabzug beziehungsweise Nettoerlös, Bestand und verfügbares Guthaben. Bindung, Lösung und Stabilisierung zeigen Stärke, Kohärenz und Stabilität vor und nach der Aktion sowie die tatsächliche Guthabenänderung. Vault-Vorgänge und Einzelschritte nennen Guthaben, gutgeschriebenen Ertrag und die Zugangsentscheidung. Phasen werden durchgehend von 1 bis 5 nummeriert; `phase` nennt auch die jeweiligen Wechselkosten.
+
+Fehler beginnen mit **NICHT AUSGEFÜHRT**, erklären den Grund und verweisen auf passende Hilfe. Fehlende und zusätzliche Argumente werden abgewiesen; etwa `reset confirm extra` setzt nichts zurück. `clear` leert weiterhin nur die Ausgabe. Lese-Befehle erzeugen keine Kosten, Buchungen oder neuen Zeitspuren.
+
+`tasks` prüft sechs aktuelle Bedingungen: eine Position halten, drei Knoten binden, Korona/Freisteller wählen, Stabilität und Kohärenz erfüllen, Vault-Guthaben halten und simulierten Ertrag erhalten. Beispiele für nächste Schritte enthalten die zugehörigen Kosten. Der Stand wird aus dem vorhandenen Modell abgeleitet; er vergibt keine Zusatzbelohnungen. Nach Verkauf oder Lösen einer Bindung kann eine Aufgabe wieder offen sein. Auch `tasks` verändert den Spielstand nicht.
 
 ## Zeit und Neustart
 

@@ -8,7 +8,7 @@ Die App und das Wiki besitzen getrennte Auslieferungen. `dist/` ist die statisch
 
 Für öffentliche Repositories ist GitHub Pages innerhalb der geltenden GitHub-Limits kostenlos. CRYONEXUS benötigt keine bezahlten Datenquellen, API-Schlüssel, Server-Datenbank oder Hintergrundprozesse. Kosten und Limits des Hostingkontos hängen von GitHub ab; die App erzeugt keine zusätzlichen Dienste.
 
-Die vollständige App ist unter **[pierreg99.github.io/CryoNexis-Lunar-Eclispe](https://pierreg99.github.io/CryoNexis-Lunar-Eclispe/)** veröffentlicht. GitHub Pages verwendet **GitHub Actions**. Der [Pages-Workflow](../../.github/workflows/pages.yml) verpackt **alle acht Dateien aus `main/dist/`** unverändert als statisches Pages-Artefakt:
+Die vollständige App ist unter **[pierreg99.github.io/CryoNexis-Lunar-Eclispe](https://pierreg99.github.io/CryoNexis-Lunar-Eclispe/)** veröffentlicht. GitHub Pages verwendet **GitHub Actions**. Der [Pages-Workflow](../../.github/workflows/pages.yml) verpackt **alle neun Dateien aus `main/dist/`** unverändert als statisches Pages-Artefakt:
 
 ```text
 index.html
@@ -17,6 +17,7 @@ assets/
   js/app.js
   js/scenes.js
   js/simulation.js
+  js/terminal.js
   vendor/cinema_engine.js
   vendor/three.min.js
   vendor/THREE-LICENSE.txt

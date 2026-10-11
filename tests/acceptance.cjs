@@ -34,13 +34,13 @@ async function staticAcceptance() {
   await Promise.all(expected.map(file => fs.access(path.join(dist, file))));
   const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
   const scripts = Array.from(html.matchAll(/<script\s+src="([^"]+)"/g), match => match[1]);
-  assert.deepEqual(scripts.map(source => source.split('?')[0]), ['assets/vendor/cinema_engine.js', 'assets/js/simulation.js', 'assets/js/app.js']);
+  assert.deepEqual(scripts.map(source => source.split('?')[0]), ['assets/vendor/cinema_engine.js', 'assets/js/simulation.js', 'assets/js/terminal.js', 'assets/js/app.js']);
   for (const source of scripts) {
     const url = new URL(source, 'http://localhost/');
     const digest = createHash('sha256').update(await fs.readFile(path.join(dist, url.pathname))).digest('hex').slice(0, 8);
     assert.equal(url.searchParams.get('v'), digest, 'Changed critical scripts must have a new cache URL');
   }
-  assert.equal((html.match(/<script[^>]+ defer>/g) || []).length, 3, 'Critical scripts must not block HTML parsing');
+  assert.equal((html.match(/<script[^>]+ defer>/g) || []).length, 4, 'Critical scripts must not block HTML parsing');
   assert.match(html, /<html lang="de"/);
   const css = await fs.readFile(path.join(dist, 'assets/css/main.css'), 'utf8');
   assert.deepEqual(Array.from(css.matchAll(/\/\*\s*(\d{2})\s*[—-]/g), match => Number(match[1])),
@@ -932,6 +932,58 @@ async function storageRecovery(browser, url) {
   console.log('PASS storage fallback: corrupt JSON recovers visibly; unavailable storage preserves trading and manual time');
 }
 
+async function terminalRun(browser, url) {
+  const run = await open(browser, url, { reduced: true, viewport: { width: 390, height: 844 } });
+  const { page } = run;
+  const command = async text => {
+    await simulationCommand(page, text);
+    return await page.locator('#terminal-output p').last().innerText();
+  };
+  const initial = await readSimulation(page);
+  for (const name of await page.evaluate(() => CryoTerminal.commands)) {
+    assert.match(await command('help ' + name), /Eingabe:[\s\S]*Beispiel:/);
+  }
+  for (const name of ['status', 'nodes', 'phase', 'eclipse', 'vault', 'portfolio', 'history', 'tasks']) {
+    assert((await command(name)).length > 30);
+  }
+  for (const text of ['buy CN-ALPHA-01', 'buy CN-ALPHA-01 1 extra', 'reset confirm extra', 'unknown', 'help constructor']) {
+    await command(text);
+    assert.equal(await page.locator('#terminal-output p').last().getAttribute('class'), 'terminal-error');
+  }
+  assert.deepEqual((await readSimulation(page)).raw, initial.raw, 'Read-only and invalid commands must preserve saved state');
+  const quote = await page.evaluate(() => CryoSimulation.create({ saved: JSON.parse(localStorage.getItem('cryonexus.simulation.v1')) }).quote('buy', 'CN-ALPHA-01', 2.5));
+  assert.match(await command('buy CN-ALPHA-01 2,5'), /2,5 Einheiten[\s\S]*Gesamtabzug:[\s\S]*Bestand: 2,5/);
+  near((await readSimulation(page)).state.cash, initial.state.cash - quote.total, 'Terminal receipt cash');
+  assert.match(await command('sell CN-ALPHA-01 0,5'), /Nettoerlös:[\s\S]*Bestand: 2 Einheiten/);
+  for (const node of initial.state.nodes.slice(0, 3)) assert.match(await command('link ' + node.id), /gebunden/);
+  assert.match(await command('stabilize CN-ALPHA-01'), /stabilisiert/);
+  assert.match(await command('phase 3'), /Aktive Phase: 3 \/ Korona/);
+  assert.match(await command('deposit 1000'), /Vault-Guthaben: 0,0000 → 1\.000,0000/);
+  assert.match(await command('pause'), /PAUSIERT/);
+  assert.match(await command('step'), /Simulationszeit: 0 → 5 Minuten/);
+  assert.match(await command('tasks'), /6 von 6 aktuell erfüllt/);
+  assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Terminal results must fit the mobile viewport');
+  await page.locator('.terminal').screenshot({ path: path.join(artifacts, 'terminal-tasks-mobile.png') });
+  assert.match(await command('withdraw 250'), /aus dem Vault ausgezahlt/);
+  assert.match(await command('resume'), /MANUELL/);
+  assert.match(await command('unlink CN-ALPHA-01'), /Vault-Fenster: GESCHLOSSEN/);
+  assert.match(await command('withdraw 1'), /NICHT AUSGEFÜHRT[\s\S]*Gate ist geschlossen/);
+  const beforeReset = await readSimulation(page);
+  await command('reset');
+  assert.deepEqual((await readSimulation(page)).raw, beforeReset.raw);
+  assert.match(await command('reset confirm'), /100\.000/);
+  assert.equal((await readSimulation(page)).state.cash, 100000);
+  await simulationCommand(page, 'clear');
+  assert.equal((await page.locator('#terminal-output').innerText()).trim(), '');
+  await command('help');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'terminal-input');
+  await assertNoAnimations(page, 'Terminal outcomes with reduced motion');
+  await clean(run);
+  await run.context.close();
+  report.runs.push({ name: 'terminal-outcomes', commands: 21 });
+  console.log('PASS terminal outcomes: every help entry, safe syntax, actual receipts, all six tasks and reset');
+}
+
 async function startupRun(browser, url) {
   const context = await browser.newContext({ viewport: { width: 640, height: 360 }, reducedMotion: 'no-preference' });
   await context.addInitScript(instrument);
@@ -998,8 +1050,8 @@ async function bootFailsafe(browser, url) {
 }
 
 async function main() {
-  assert(Array.from(suites).every(suite => ['all', 'desktop', 'mobile', 'reduced', 'simulation', 'recovery', 'boot', 'gpu', 'startup'].includes(suite)),
-    'Unknown ACCEPTANCE_SUITE; use all, desktop, mobile, reduced, simulation, recovery, boot, gpu or startup');
+  assert(Array.from(suites).every(suite => ['all', 'desktop', 'mobile', 'reduced', 'simulation', 'recovery', 'boot', 'gpu', 'startup', 'terminal'].includes(suite)),
+    'Unknown ACCEPTANCE_SUITE; use all, desktop, mobile, reduced, simulation, recovery, boot, gpu, startup or terminal');
   report.suites = Array.from(suites);
   await fs.mkdir(artifacts, { recursive: true });
   await staticAcceptance();
@@ -1054,6 +1106,7 @@ async function main() {
     if (enabled('simulation')) await simulationRun(browser, local);
     if (enabled('boot')) await bootFailsafe(browser, local);
     if (enabled('startup')) await startupRun(browser, local);
+    if (enabled('terminal')) await terminalRun(browser, local);
     console.log(`PASS payload ${report.payloadBytes} bytes; Chromium ${report.browser}; ${report.runs.length} browser runs; ${report.blocked.length} policy-blocked runs`);
     if (!fileAllowed && process.env.REQUIRE_FILE_TEST === '1') throw new Error('Required file:// browser validation was blocked by administrator policy');
     report.status = 'passed';

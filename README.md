@@ -10,7 +10,7 @@ Eine deutschsprachige, prozedurale 3D-Erfahrung zwischen Eis, Finsternis und Sch
 
 | Erlebnis | Architektur | Auslieferung | Prüfung |
 | --- | --- | --- | --- |
-| 6 prozedurale Szenen | 4 getrennte Schichten | 742.968 Bytes in `dist/` | 10 Modell-Testgruppen + 10 Browserdurchläufe bestanden |
+| 6 prozedurale Szenen | 4 getrennte Schichten | 754.345 Bytes in `dist/` | 10 Modell- und 4 Terminal-Testgruppen; gezielte Browserprüfungen bestanden |
 
 ## In einer Minute starten
 
@@ -36,6 +36,8 @@ Du startest mit **100.000 fiktiven CNX**. Drei Bindungen, Stabilität ≥75 und 
 
 **[Ersten Vault öffnen →](docs/wiki/Schnellstart.md#dein-erster-vault) · [Alle Regeln und Zahlen →](docs/wiki/Simulation.md)**
 
+Das Terminal liefert konkrete Ergebnisbelege mit Gebühren, Geldfluss und Beständen. `help buy` erklärt einen einzelnen Befehl; `tasks` zeigt sechs aktuelle Aufgaben mit nächsten Schritten. [Alle Befehle und Ergebnisse →](docs/wiki/Terminal.md)
+
 ## Die sechs Welten
 
 | Kammer | Finsternis | Eis-Nexus |
@@ -59,7 +61,7 @@ flowchart LR
     S -->|vorhandene Geometrie| E
 ```
 
-Die Oberfläche enthält keine 3D-Geometrie. Das Modell kennt weder DOM noch Speicher. Die Engine besitzt höchstens zwei WebGL-Kontexte und rendert ausschließlich sichtbare Szenen. GPU-Daten ausgeblendeter Szenen und große Puffer freier Slots werden freigegeben; CPU-Szenen bleiben gecacht. Viertelauflösender Bloom verwendet zwei permanente Targets ohne Allokationen pro Frame. Die Oberfläche startet mit 78.197 Bytes JavaScript; Three.js und Szenen (632.861 Bytes) laden nach dem ersten UI-Paint nach. Die frühere künstliche 2,4-Sekunden-Boot-Sequenz entfällt. Bei reduzierter Bewegung werden die Grafikskripte erst nach Aktivierung der Bewegung geladen. Alle Skripte laden klassisch und lokal, ohne Bundler oder ES-Modulimporte.
+Die Oberfläche enthält keine 3D-Geometrie. Das Modell kennt weder DOM noch Speicher. Die Engine besitzt höchstens zwei WebGL-Kontexte und rendert ausschließlich sichtbare Szenen. GPU-Daten ausgeblendeter Szenen und große Puffer freier Slots werden freigegeben; CPU-Szenen bleiben gecacht. Viertelauflösender Bloom verwendet zwei permanente Targets ohne Allokationen pro Frame. Die Oberfläche startet mit 89.514 Bytes JavaScript; Three.js und Szenen (632.861 Bytes) laden nach dem ersten UI-Paint nach. Die frühere künstliche 2,4-Sekunden-Boot-Sequenz entfällt. Bei reduzierter Bewegung werden die Grafikskripte erst nach Aktivierung der Bewegung geladen. Alle Skripte laden klassisch und lokal, ohne Bundler oder ES-Modulimporte.
 
 **[Modulverträge →](docs/wiki/Architektur.md) · [Szenen und Shader →](docs/wiki/Szenen.md) · [Farben und Gestaltung →](docs/wiki/Designsystem.md)**
 
@@ -73,12 +75,12 @@ npm test
 
 Nur das Modell prüfen: `npm run test:simulation`. Diese Werkzeuge sind Entwicklungsabhängigkeiten; `dist/` benötigt sie nicht.
 
-Der letzte vollständige Testlauf bestand zehn Modell-Testgruppen und zehn HTTP-Browserdurchläufe einschließlich nativer GPU-Ressourcenprüfung bei DPR 2. Zwei `file://`-Versuche wurden durch die verwaltete Browserrichtlinie blockiert. **60 FPS und der gesamte VRAM auf echter Hardware sind noch nicht nachgewiesen.** Die konservative Target-Schätzung ist auf 24,7 MB für beide Renderer-Slots begrenzt. Details, Testauswahl und Messgrenzen stehen im [Prüfbericht](VERIFICATION.md) und im [Test-Handbuch](docs/wiki/Tests-und-Qualitaet.md).
+Die Terminal-Erweiterung besteht zusätzlich vier reine Terminal-Testgruppen sowie Browserprüfungen für alle Befehle, Simulation, verzögerten Grafikstart und mobile Ergebnisse. Der vorherige vollständige Testlauf bestand zehn Modell-Testgruppen und zehn HTTP-Browserdurchläufe einschließlich nativer GPU-Ressourcenprüfung bei DPR 2. Zwei `file://`-Versuche wurden durch die verwaltete Browserrichtlinie blockiert. **60 FPS und der gesamte VRAM auf echter Hardware sind noch nicht nachgewiesen.** Die konservative Target-Schätzung ist auf 24,7 MB für beide Renderer-Slots begrenzt. Details, Testauswahl und Messgrenzen stehen im [Prüfbericht](VERIFICATION.md) und im [Test-Handbuch](docs/wiki/Tests-und-Qualitaet.md).
 
 ## Dokumentation und Hosting
 
 Das [Handbuch](docs/wiki/Home.md) führt vom ersten Vault bis zu Formeln, Modulverträgen und Veröffentlichung. Seine Markdown-Seiten liegen versioniert in `docs/wiki/`; Sidebar und Footer sind für das GitHub-Wiki vorbereitet. Das Wiki ist auf GitHub aktiviert, sein separates Git-Repository ist noch nicht initialisiert. Das [Veröffentlichungsskript](scripts/publish-wiki.py) exportiert und synchronisiert die Seiten, sobald eine erste Wiki-Seite angelegt wurde.
 
-Die vollständige App ist auf **[GitHub Pages](https://pierreg99.github.io/CryoNexis-Lunar-Eclispe/)** veröffentlicht. Der [Pages-Workflow](.github/workflows/pages.yml) liefert alle acht Laufzeitdateien unverändert aus `main/dist/` aus. Änderungen an der App auf `main` werden automatisch veröffentlicht; eine manuelle Veröffentlichung ist über „Run workflow“ möglich. GitHub Pages ist für öffentliche Repositories innerhalb der geltenden GitHub-Limits kostenlos; die App benötigt keine zusätzlichen Dienste. [Hosting und Wiki veröffentlichen →](docs/wiki/Hosting-und-Wiki.md)
+Die vollständige App ist auf **[GitHub Pages](https://pierreg99.github.io/CryoNexis-Lunar-Eclispe/)** veröffentlicht. Der [Pages-Workflow](.github/workflows/pages.yml) liefert alle neun Laufzeitdateien unverändert aus `main/dist/` aus. Änderungen an der App auf `main` werden automatisch veröffentlicht; eine manuelle Veröffentlichung ist über „Run workflow“ möglich. GitHub Pages ist für öffentliche Repositories innerhalb der geltenden GitHub-Limits kostenlos; die App benötigt keine zusätzlichen Dienste. [Hosting und Wiki veröffentlichen →](docs/wiki/Hosting-und-Wiki.md)
 
 Three.js r149 ist lokal enthalten und unter MIT lizenziert: [Lizenz](dist/assets/vendor/THREE-LICENSE.txt). Für den eigenen Projektcode ist bislang keine separate Lizenz festgelegt.

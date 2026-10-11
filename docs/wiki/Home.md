@@ -29,7 +29,7 @@ Hier wird aus einer visuellen Welt eine nachvollziehbare Simulation. Einstieg, Z
 
 ## Stand und Grenzen
 
-Vier Schichten verbinden sechs prozedurale Szenen. Acht Dateien in `dist/` belegen 739.689 Bytes. Der letzte vollständige Lauf bestand zehn Modell-Testgruppen und acht Browserdurchläufe. Die App fordert keine externen Laufzeitressourcen an.
+Vier Schichten verbinden sechs prozedurale Szenen. Neun Dateien in `dist/` belegen 754.345 Bytes. Terminal-Hilfe und Ergebnisbelege sind ein eigenes Modul; der Aufgabenstand folgt dem vorhandenen Simulationsmodell. Aktuelle Nachweise stehen im [Prüfbericht](../../VERIFICATION.md). Die App fordert keine externen Laufzeitressourcen an.
 
 Direkte Datei-URLs sind in der Testumgebung gesperrt. Die Zielrate von 60 FPS muss auf echten Geräten geprüft werden. Der vollständige [Prüfbericht](../../VERIFICATION.md) trennt bestandene Checks von offenen Nachweisen.
 

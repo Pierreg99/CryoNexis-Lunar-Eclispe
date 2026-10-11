@@ -1,5 +1,17 @@
 # Prüfung · CRYONEXUS
 
+## Terminal-Erweiterung · 11. Oktober 2026
+
+Aktueller Umfang: **35 versionierte Projektdateien**, davon **9 Laufzeitdateien mit 754.345 Bytes**. Die vier Startskripte umfassen 89.514 Bytes; Three.js und Szenen bleiben verzögert geladen. Das eigenständige `terminal.js` enthält Eingabeprüfung, Hilfe, Ergebnisbelege und den aus der Simulation abgeleiteten Aufgabenstand.
+
+`ACCEPTANCE_SUITE=terminal,startup,simulation npm test` bestand zehn Modell-Testgruppen, vier Terminal-Testgruppen und fünf HTTP-Browserdurchläufe. Geprüft wurden alle 21 Befehle und ihre Einzelhilfe, zustandsneutrale Lese- und Fehlerfälle, genaue Handelsbelege, vollständiger Aufgaben-/Vault-Ablauf, bestätigter Reset, Speicherung und sichtbare Folgen in allen sechs Szenen. Die UI-Zeitmarke lag beim absichtlich verzögerten Grafikdownload lokal bei 285,6 ms; dies ist keine Ladezeit-Zusage für andere Geräte.
+
+Ein zusätzlicher mobiler Terminal-Durchlauf bei 390 × 844 Pixeln bestand: alle Befehle, sechs erfüllte Aufgaben, Rückmeldungen bei geschlossenem Vault, Fokus, Reset und kein horizontaler Überlauf. Die Aufgaben-Ausgabe wurde zusätzlich visuell geprüft. Alle ausgelieferten JavaScript-Dateien bestehen die Syntaxprüfung; lokale Dokumentationslinks zeigen auf vorhandene Dateien.
+
+## Vorherige Vollprüfung · 10. Oktober 2026
+
+Die folgenden Messungen dokumentieren den Stand vor der Terminal-Erweiterung; aktuelle Laufzeitgrößen stehen oben.
+
 Geprüft am 10. Oktober 2026 mit Chromium 151.0.7922.173 in der verwalteten Linux-Umgebung. Der vollständige Aufruf `npm test` hat mit Exit-Code 0 abgeschlossen: zehn reine Modell-Testgruppen und zehn HTTP-Browserdurchläufe über acht Suites bestanden, einschließlich nativer Vertex-Arrays und verzögertem Grafikdownload. Zwei `file://`-Durchläufe sind ausdrücklich durch die Browser-Richtlinie blockiert. Alle ausgelieferten JavaScript-Dateien bestehen zusätzlich die Syntaxprüfung. Nach Ergänzung der Inhaltsversionen bestanden außerdem drei fokussierte HTTP-Durchläufe für UI-Start, reduzierte Bewegung und Boot-Fail-Safe; dabei wurde ein weiterer Datei-URL-Versuch als blockiert protokolliert.
 
 | Prüfung | Ergebnis |

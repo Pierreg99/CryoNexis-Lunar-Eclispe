@@ -5,7 +5,7 @@ Geprüft am 10. Oktober 2026 mit Chromium 151.0.7922.173 in der verwalteten Linu
 | Prüfung | Ergebnis |
 | --- | --- |
 | Vollständige lokale Auslieferung | 8 Laufzeitdateien, insgesamt 742.968 Bytes; unter 1,2 MB |
-| Projektstruktur | 32 versionierte Quelldateien auf `main` einschließlich README, Wiki, Wiki-Skript und Pages-Workflow; vier getrennte Schichten: Modell, Oberfläche, Szenen, Engine |
+| Projektstruktur | 33 versionierte Quelldateien auf `main` einschließlich README, Wiki, Wiki-Skript und Pages-Workflow; vier getrennte Schichten: Modell, Oberfläche, Szenen, Engine |
 | Skriptreihenfolge und CSS-Struktur | Cinema → Simulation → App (`defer`); Three.js → Szenen nach UI-Paint/Idle; 20 nummerierte CSS-Blöcke |
 | Desktop und Mobilgerät | Alle sechs Sektionen und Interaktionen geprüft; kein horizontaler Überlauf |
 | Lazy-Build und WebGL-Limit | Jede Szene genau einmal gebaut; maximal zwei tatsächliche WebGL-Kontexte |

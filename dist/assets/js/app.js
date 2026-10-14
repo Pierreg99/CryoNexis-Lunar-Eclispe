@@ -151,6 +151,11 @@
         vaultFeedback.textContent = ''; delete vaultFeedback.dataset.error; delete vaultFeedback.dataset.validation;
       }
       validateVaultAmount();
+      document.querySelectorAll('.scene-discovery, #signal-feedback, #journal-message').forEach(function (element) {
+        element.textContent = ''; delete element.dataset.error;
+      });
+      const signalCode = document.getElementById('signal-code');
+      if (signalCode) signalCode.setAttribute('aria-invalid', 'false');
     }
     return result;
   }
@@ -312,6 +317,9 @@
     renderVaultGuide();
     const pause = document.getElementById('simulation-pause');
     if (pause) { pause.textContent = state.paused ? 'Simulation fortsetzen' : 'Simulation pausieren'; pause.setAttribute('aria-pressed', String(state.paused)); }
+    const journalPause = document.getElementById('journal-pause');
+    if (journalPause) { journalPause.textContent = state.paused ? 'Zeit fortsetzen' : 'Zeit pausieren'; journalPause.setAttribute('aria-pressed', String(state.paused)); }
+    setText('journal-time-mode', state.phaseName + (state.paused ? ' · PAUSIERT' : motion.matches ? ' · MANUELLE ZEIT' : ' · AUTOMATISCHE ZEIT'));
     phaseButtons.forEach(function (button) { button.setAttribute('aria-pressed', String(Number(button.dataset.phase) === phaseIndex)); });
     setText('phase-description', phases[phaseIndex].description + ' · Kohärenz ' + number.format(state.coherence) + ' % · Vault ' + (state.vault.open ? 'offen' : 'gesperrt'));
     const key = state.history.map(function (item) { return item.id; }).join(',');
@@ -365,7 +373,8 @@
     const response = window.CryoTerminal.run(raw, {
       snapshot: simulation.snapshot, action: function (type, payload) { return action(type, payload, null, false); },
       selectPhase: function (index, manual) { return selectPhase(index, manual, false); },
-      quote: simulation.quote, phases: phases, sceneCount: builtScenes.size, reduced: motion.matches
+      quote: simulation.quote, phases: phases, sceneCount: builtScenes.size, reduced: motion.matches,
+      currentSection: (document.querySelector('nav [aria-current]') || {}).hash?.slice(1) || 'chamber'
     });
     if (!response) return;
     if (response.clear) { if (terminalOutput) terminalOutput.replaceChildren(); return; }
@@ -413,6 +422,8 @@
   });
   const pauseButton = document.getElementById('simulation-pause');
   if (pauseButton) pauseButton.addEventListener('click', function () { action(state.paused ? 'resume' : 'pause'); });
+  const journalPauseButton = document.getElementById('journal-pause');
+  if (journalPauseButton) journalPauseButton.addEventListener('click', function () { action(state.paused ? 'resume' : 'pause', {}, document.getElementById('journal-message')); });
   const stepButton = document.getElementById('simulation-step');
   if (stepButton) stepButton.addEventListener('click', function () { action('step'); });
   const vaultAmount = document.getElementById('vault-amount');
@@ -688,6 +699,9 @@
     });
   }
   simulation.subscribe(startExpedition);
+  if (window.CryoChronicle) window.CryoChronicle.start({
+    subscribe: simulation.subscribe, action: action, snapshot: simulation.snapshot, selectPhase: selectPhase
+  });
 
   // The UI and model are usable before downloading or compiling the 3D layer.
   // Keep audio and simulation listeners in the small engine loaded above.

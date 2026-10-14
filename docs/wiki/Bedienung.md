@@ -6,6 +6,8 @@
 
 „Welt erkunden“ führt durch die Szenen; „Zur Simulation“ öffnet den Schattenmarkt. Die Navigation verbindet alle sechs Sektionen und markiert deine aktuelle Ansicht. Der Leitfaden „Dein erster Vault“ zeigt anhand deines Netzwerks den nächsten Schritt: Knoten binden, Stabilität oder Kohärenz erhöhen, ein passendes Zeitfenster wählen und den Vault öffnen.
 
+Das [Entdeckerjournal](Quests-und-Geheimnisse.md) ergänzt sechs Story-Aufträge, prüfbare Szenensignale, versteckte Übertragungen und gespeicherte Signaturen. Seine Zeitpause hält die gewünschte Phase für Untersuchungen fest.
+
 ## Knoten und Handel
 
 Die sechs Knoten öffnen sich per Klick, Enter oder Leertaste. Jeder zeigt Preis, Liquidität, Stärke, Spread, simuliertes Risiko, Validatoren, Halbwertszeit und deinen Bestand.

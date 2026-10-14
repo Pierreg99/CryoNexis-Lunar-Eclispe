@@ -40,3 +40,9 @@ Das Titelbild [cryonexus-banner.svg](../assets/cryonexus-banner.svg) verwendet d
 README dient dem Einstieg: Konzept, Start, Handlung/Folge, Architektur und Prüfstand. Das Wiki entwickelt jeweils einen Hauptgedanken pro Seite. Verwende Tabellen für Vergleichswerte, Mermaid für Abläufe und beschreibende Links für nächste Schritte. Prüfdaten und Spielregeln sollen eindeutig von offenen Nachweisen getrennt bleiben.
 
 **Weiter:** [Szenen](Szenen.md) · [Bedienung](Bedienung.md) · [Architektur](Architektur.md)
+
+## Journal und Lichtsignaturen
+
+Auftragskarten unterscheiden gesperrte, verfügbare, aktive, erreichte und abgeschlossene Ziele durch Text, Fortschrittsbalken und Rahmen. Verborgene Signale zeigen zunächst Platzhalter; Hinweise öffnen sich bewusst. Das Archiv sammelt verdiente Texte. Fokus und Eingaben bleiben bei Simulationsaktualisierungen erhalten.
+
+Frost ist die Ursprungssignatur. Glut und Aurora werden durch Entdeckungen freigeschaltet und verändern Akzentfarben der Oberfläche. Alle drei behalten dunkle Flächen, sichtbaren Fokus und die bestehende Typografie.

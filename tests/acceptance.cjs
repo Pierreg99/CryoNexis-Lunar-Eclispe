@@ -34,17 +34,17 @@ async function staticAcceptance() {
   await Promise.all(expected.map(file => fs.access(path.join(dist, file))));
   const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
   const scripts = Array.from(html.matchAll(/<script\s+src="([^"]+)"/g), match => match[1]);
-  assert.deepEqual(scripts.map(source => source.split('?')[0]), ['assets/vendor/cinema_engine.js', 'assets/js/simulation.js', 'assets/js/terminal.js', 'assets/js/app.js', 'assets/js/astro-zen.js']);
+  assert.deepEqual(scripts.map(source => source.split('?')[0]), ['assets/vendor/cinema_engine.js', 'assets/js/simulation.js', 'assets/js/terminal.js', 'assets/js/chronicle.js', 'assets/js/app.js', 'assets/js/astro-zen.js']);
   for (const source of scripts) {
     const url = new URL(source, 'http://localhost/');
     const digest = createHash('sha256').update(await fs.readFile(path.join(dist, url.pathname))).digest('hex').slice(0, 8);
     assert.equal(url.searchParams.get('v'), digest, 'Changed critical scripts must have a new cache URL');
   }
-  assert.equal((html.match(/<script[^>]+ defer>/g) || []).length, 5, 'Critical scripts must not block HTML parsing');
+  assert.equal((html.match(/<script[^>]+ defer>/g) || []).length, 6, 'Critical scripts must not block HTML parsing');
   assert.match(html, /<html lang="de"/);
   const css = await fs.readFile(path.join(dist, 'assets/css/main.css'), 'utf8');
   assert.deepEqual(Array.from(css.matchAll(/\/\*\s*(\d{2})\s*[—-]/g), match => Number(match[1])),
-    Array.from({ length: 22 }, (_, index) => index + 1));
+    Array.from({ length: 23 }, (_, index) => index + 1));
   const app = await fs.readFile(path.join(dist, 'assets/js/app.js'), 'utf8');
   const lazySources = Array.from(app.matchAll(/'(assets\/js\/[^'?]+\.js)\?v=([a-f0-9]{8})'/g));
   assert.equal(lazySources.length, 5, 'Scene and research modules must carry cache versions');
@@ -416,8 +416,25 @@ async function fullRun(browser, url, name, viewport) {
   }
   await scrollTo(page, 'nodes');
   const prices = await page.locator('.node-price').allTextContents();
-  await page.waitForFunction(initial => Array.from(document.querySelectorAll('.node-price'))
-    .some((element, index) => element.textContent !== initial[index]), prices, { timeout: 10_000, polling: 100 });
+  const beforeDrift = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('cryonexus.simulation.v1'));
+    return { tick: state.tick, phase: state.phase, paused: state.paused, rng: state.rng };
+  });
+  try {
+    await page.waitForFunction(initial => Array.from(document.querySelectorAll('.node-price'))
+      .some((element, index) => element.textContent !== initial[index]), prices, { timeout: 10_000, polling: 100 });
+  } catch (error) {
+    const diagnostic = await page.evaluate(before => {
+      const state = JSON.parse(localStorage.getItem('cryonexus.simulation.v1'));
+      return { before, after: { tick: state.tick, phase: state.phase, paused: state.paused, rng: state.rng },
+        history: state.history.slice(-5), hidden: document.hidden, visibility: document.visibilityState,
+        reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+        simulationTime: document.getElementById('sim-time').textContent,
+        prices: Array.from(document.querySelectorAll('.node-price')).map(element => element.textContent),
+        phaseTimers: __acceptance.phaseTimers, stats: cinema.getStats() };
+    }, beforeDrift);
+    throw new Error(`${error.message}; automatic price drift: ${JSON.stringify(diagnostic)}; faults: ${JSON.stringify(run.faults)}`);
+  }
   await page.locator('.node-trigger').nth(1).click();
   assert.equal(await page.locator('.node-trigger').nth(1).getAttribute('aria-expanded'), 'true');
   await page.locator('.node').nth(1).locator('.node-details').waitFor({ state: 'visible', timeout: 10_000 });

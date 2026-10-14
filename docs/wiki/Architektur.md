@@ -103,3 +103,9 @@ Neue Spielregeln gehören in `simulation.js`, Eingaben in `app.js`, Geometrie in
 `expedition.js` ist der verzögert geladene Fähigkeiten-Host. Er abonniert das Modell und lädt Observatorium, Resonanzlabor und Zeitarchiv erst nach den jeweiligen Nachweisen. Die drei Dateien unter `capabilities/` erzeugen ihre Bedienelemente einmalig und aktualisieren sie aus Snapshots. Sie besitzen keinen eigenen Spielstand. Forschungsdaten liegen als optionaler `expedition`-Teil im bisherigen Simulationsformat; alte Spielstände bleiben gültig. Neue Aktionen prüfen Zugang und Voraussetzungen im Modell, auch wenn sie aus dem Terminal stammen.
 
 `simulation.refresh()` benachrichtigt Ansichten über zeitabhängige Zugangsänderungen ohne einen Markttakt. Nach Ablauf werden alle abonnierten Ansichten einschließlich Fähigkeiten aktualisiert. Entdeckte Module und das Dossier bleiben lesbar; neue Aktionen werden gesperrt. Modellwerte `surveyCount`, `calibrated` und `archiveDecoded` werden von der Engine validiert und beeinflussen Finsternis, Nexus und Nebel.
+
+## Journal und gespeicherte Entdeckungen
+
+`simulation.js` besitzt auch Aufträge, Inspektionsnachweise, Geheimnisse, Echos und freigeschaltete Signaturen. Das optionale gespeicherte Feld `journey` erweitert Version 1; alte Spielstände bleiben gültig. Neue belegte Stabilisierung und Vault-Zinsen werden auch vor dem Öffnen des Journals erfasst. Alte Einlagen oder historische Erträge werden nicht als neue Questbelege rekonstruiert.
+
+`chronicle.js` ist eine kleine DOM-Ansicht, die vor `app.js` geladen wird. Die App übergibt `subscribe`, `action`, `snapshot` und `selectPhase`; die Ansicht erhält `snapshot().journey`, entscheidet aber nicht über Freischaltungen. Die Welt wird nur durch ausdrückliche Aktionen untersucht; Scrollen und Zen Show erzeugen keine Inspektionsnachweise. Signaturen ändern die Oberfläche, zusätzliche Renderer werden nicht angelegt.

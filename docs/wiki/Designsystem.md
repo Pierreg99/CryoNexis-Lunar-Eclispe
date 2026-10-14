@@ -13,7 +13,7 @@ Die Gestaltung verbindet kalte Materialien, präzise Instrumente und kurze warme
 | `--violet` | `#8b7bff` | Zeitbindung, sekundäre Energie und Nebel |
 | `--corona` | `#ff7a3d` | Korona, negative Änderungen und Fehlermeldungen |
 | `--frost` | `#e0f5fa` | Primärer Text |
-| `--steel` | `#8296a9` | Sekundäre Texte und Messbeschriftungen |
+| `--steel` | `#9aafbf` | Sekundäre Texte und Messbeschriftungen |
 
 Die verbindlichen Tokens stehen in [main.css](../../dist/assets/css/main.css). Farbe unterstützt Text und Symbole; ein Gate oder Fehler darf seine Bedeutung nicht allein über Farbe vermitteln.
 
@@ -31,7 +31,7 @@ Einblendungen beobachten eine Sichtbarkeit von 15 % und laufen einmal. Scroll-Ti
 
 ## Responsive Gestaltung
 
-Die Haupt-Mobilgrenze liegt bei 760 px, eine zusätzliche Anpassung bei 1.000 px. Das Knotengitter wechselt von drei auf zwei und schließlich eine Spalte. Dashboard-Kennzahlen bleiben in zwei Spalten auf kleineren Breiten. Terminal und Vault werden untereinander angeordnet. Touch-Aktionen erhalten ausreichend große Flächen; Fokus bleibt sichtbar.
+Die Haupt-Mobilgrenze liegt bei 760 px, eine zusätzliche Anpassung bei 1.000 px. Das Knotengitter wechselt von drei auf zwei und schließlich eine Spalte. Dashboard-Kennzahlen bleiben in zwei Spalten auf kleineren Breiten. Terminal und Vault werden untereinander angeordnet. Bedienbuttons haben mindestens 44 px Höhe; mobile Eingabefelder verwenden 16 px Schrift, damit beim Fokussieren kein automatischer Zoom nötig ist. Die Navigation bleibt in einer horizontalen Leiste erreichbar; Fokus bleibt sichtbar.
 
 ## README und Wiki fortführen
 

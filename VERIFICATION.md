@@ -1,5 +1,17 @@
 # Prüfung · CRYONEXUS
 
+## Bedienung und Gestaltung · 14. Oktober 2026
+
+Aktueller Umfang: **14 Laufzeitdateien mit 793.512 Bytes**, davon **110.251 Bytes Start-JavaScript**. Direkte Einstiege, aktive Navigation, ein zustandsabhängiger Vault-Leitfaden, lokale Aktionsbelege, Eingabevalidierung und bewusst aktivierter Klang wurden ergänzt. Mobile Felder verwenden 16 px Schrift; Bedienbuttons haben mindestens 44 px Höhe. Der Lieferumfang bleibt unter 1,2 MB; Inhaltsversionen für CSS und App wurden erneuert.
+
+Mit Chromium **154.0.8037.57** bestanden **18 reine Testgruppen**, **zwei neue Bedienungs-Browserabläufe** und **14 verschiedene lokale HTTP-Akzeptanzszenarien über alle elf Suites**. Geprüft wurden unter anderem echte Handels- und Vault-Schritte, erhaltene Belege nach Markttakten, ungültige Eingaben ohne Zustandsänderung, Neustart-Validierung, aktive Navigation bei reduzierter Bewegung, Desktop/Mobilgerät, verzögerter Grafikstart, Forschungsfähigkeiten, Zen Show, unabhängige Kontextwiederherstellung, GPU-Freigabe und Boot-Fail-Safe.
+
+Die Abdeckung entstand aus abgeschlossenen Teilen des Vollaufrufs und separaten Suite-Aufrufen. **Ein vollständiger `npm test`-Aufruf bestand in dieser Umgebung nicht:** Zwei Vollversuche erreichten jeweils eine bestehende 10-Sekunden-Grafik-Wartegrenze — zunächst beim sichtbaren Desktop-Renderer, später beim ersten wiederhergestellten Kontext. Desktop und Kontextwiederherstellung bestanden anschließend separat mit denselben Grenzen und Assertions. Es wurden keine Wartezeiten oder Prüfbedingungen gelockert.
+
+Die separaten erfolgreichen Akzeptanzaufrufe waren `ACCEPTANCE_SUITE=desktop node tests/acceptance.cjs`, `ACCEPTANCE_SUITE=recovery,gpu,boot node tests/acceptance.cjs` und `ACCEPTANCE_SUITE=simulation,startup,terminal,zen,capabilities node tests/acceptance.cjs`. Der zweite Vollversuch bestätigte zusätzlich Desktop, Mobilgerät und reduzierte Bewegung. Zwei Datei-URL-Szenarien wurden durch die bestehende Chromium-Richtlinie blockiert. Software-Rendering belegt keine Hardware-FPS oder gesamten VRAM.
+
+Das zusammengefasste lokale Ergebnis liegt in `tests/artifacts/refinement-report.json`; es enthält ausdrücklich `fullNpmTestPassed: false`, alle bestandenen Szenarien sowie die beiden Vollversuchs-Timeouts und ihre erfolgreichen Nachprüfungen. Rohberichte und Screenshots bleiben im ignorierten Artefaktverzeichnis.
+
 ## Forschungsfähigkeiten · 11. Oktober 2026
 
 Aktueller Umfang: **42 Projektdateien**, davon **14 Laufzeitdateien mit 782.279 Bytes** und 104.259 Bytes Start-JavaScript. Vier Forschungsdateien werden zusätzlich erst nach Zugang beziehungsweise Nachweisen angefordert; geänderte Szenen und Forschungsmodule tragen Inhaltsversionen in ihren URLs. `unlock cryo` und `cryo unlock` starten dieselbe Freischaltung. 27 Terminalbefehle unterstützen Hilfe und Ergebnisbelege.

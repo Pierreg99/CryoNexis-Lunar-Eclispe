@@ -10,7 +10,7 @@ Eine deutschsprachige, prozedurale 3D-Erfahrung zwischen Eis, Finsternis und Sch
 
 | Erlebnis | Architektur | Auslieferung | Prüfung |
 | --- | --- | --- | --- |
-| 6 prozedurale Szenen | 4 getrennte Schichten | 845.804 Bytes in `dist/` | 10 Modell-, 5 Terminal-, 3 Forschungs- und 10 Journal-Testgruppen; Bedienung und Browser-Verhalten geprüft |
+| 6 prozedurale Szenen | 4 getrennte Schichten | 851.371 Bytes in `dist/` | 37 reine Testgruppen sowie Desktop-/Mobilspielwege und Browser-Akzeptanzprüfungen |
 
 ## In einer Minute starten
 
@@ -63,7 +63,7 @@ flowchart LR
     S -->|vorhandene Geometrie| E
 ```
 
-Die Oberfläche enthält keine 3D-Geometrie. Das Modell kennt weder DOM noch Speicher. Die Engine besitzt höchstens zwei WebGL-Kontexte und rendert ausschließlich sichtbare Szenen. GPU-Daten ausgeblendeter Szenen und große Puffer freier Slots werden freigegeben; CPU-Szenen bleiben gecacht. Viertelauflösender Bloom verwendet zwei permanente Targets ohne Allokationen pro Frame. Die Oberfläche startet mit 149.898 Bytes JavaScript; Three.js und Szenen (633.171 Bytes) laden nach dem ersten UI-Paint nach. Die frühere künstliche 2,4-Sekunden-Boot-Sequenz entfällt. Bei reduzierter Bewegung werden die Grafikskripte erst nach Aktivierung der Bewegung geladen. Alle Skripte laden klassisch und lokal, ohne Bundler oder ES-Modulimporte.
+Die Oberfläche enthält keine 3D-Geometrie. Das Modell kennt weder DOM noch Speicher. Die Engine besitzt höchstens zwei WebGL-Kontexte und rendert ausschließlich sichtbare Szenen. GPU-Daten ausgeblendeter Szenen und große Puffer freier Slots werden freigegeben; CPU-Szenen bleiben gecacht. Viertelauflösender Bloom verwendet zwei permanente Targets ohne Allokationen pro Frame. Die Oberfläche startet mit 154.717 Bytes JavaScript; Three.js und Szenen (633.171 Bytes) laden nach dem ersten UI-Paint nach. Die frühere künstliche 2,4-Sekunden-Boot-Sequenz entfällt. Bei reduzierter Bewegung werden die Grafikskripte erst nach Aktivierung der Bewegung geladen. Alle Skripte laden klassisch und lokal, ohne Bundler oder ES-Modulimporte.
 
 **[Modulverträge →](docs/wiki/Architektur.md) · [Szenen und Shader →](docs/wiki/Szenen.md) · [Farben und Gestaltung →](docs/wiki/Designsystem.md)**
 
@@ -77,7 +77,7 @@ npm test
 
 Nur das Modell prüfen: `npm run test:simulation`. Diese Werkzeuge sind Entwicklungsabhängigkeiten; `dist/` benötigt sie nicht.
 
-Die Terminal-Erweiterung besteht zusätzlich vier reine Terminal-Testgruppen sowie Browserprüfungen für alle Befehle, Simulation, verzögerten Grafikstart und mobile Ergebnisse. Der vorherige vollständige Testlauf bestand zehn Modell-Testgruppen und zehn HTTP-Browserdurchläufe einschließlich nativer GPU-Ressourcenprüfung bei DPR 2. Zwei `file://`-Versuche wurden durch die verwaltete Browserrichtlinie blockiert. **60 FPS und der gesamte VRAM auf echter Hardware sind noch nicht nachgewiesen.** Die konservative Target-Schätzung ist auf 24,7 MB für beide Renderer-Slots begrenzt. Details, Testauswahl und Messgrenzen stehen im [Prüfbericht](VERIFICATION.md) und im [Test-Handbuch](docs/wiki/Tests-und-Qualitaet.md).
+Die Testsuite umfasst 37 reine Gruppen und sechs Browser-Spielwege für Journal, Geheimnisse und Bedienung vor den Akzeptanzprüfungen. Sie prüft echte Hinweise, einmalige Entdeckungen, sichere Speicherung, unveränderte Marktregeln und Desktop-/Mobilbedienung. Frühere Prüfungen decken zusätzlich die GPU-Ressourcen bei DPR 2 ab. Datei-URL-Versuche können durch die verwaltete Browserrichtlinie blockiert werden. **60 FPS und der gesamte VRAM auf echter Hardware sind noch nicht nachgewiesen.** Die konservative Target-Schätzung ist auf 24,7 MB für beide Renderer-Slots begrenzt. Ergebnisse, Testauswahl und Messgrenzen stehen im [Prüfbericht](VERIFICATION.md) und im [Test-Handbuch](docs/wiki/Tests-und-Qualitaet.md).
 
 ## Dokumentation und Hosting
 
@@ -109,6 +109,6 @@ Forschungsnachweise bleiben lokal gespeichert. Beobachtungen verändern die Fins
 
 **JOURNAL** öffnet sechs dauerhaft spielbare Story-Aufträge. Prüfe die Signale in den sechs Szenen, stelle eine Bake wieder her und bewahre Zeit im Vault. Fortschritt und einmalige Belohnungen bleiben lokal gespeichert. Das Journal weist zur nächsten unbesuchten Szene und bietet eine eigene Zeitpause.
 
-Drei verborgene Übertragungen lassen sich aus echten Anzeigen, einer stillen Zeitlinie und dem zurückkehrenden Licht erschließen. Zwei ungewöhnliche Terminal-Echos warten auf Hinweise aus dem Vault. Dein Archiv sammelt Dossiers und Titel; Entdeckungen öffnen die Lichtsignaturen **Glut** und **Aurora**. Alle neuen Inhalte bleiben auch nach Ablauf des CRYO-Zugangs spielbar.
+Sechs verborgene Übertragungen lassen sich aus den Szenensignalen erschließen. Drei neue eigene Geschichten führen dich auf einen Rückweg, zu einer siebten Stimme und zu einer Antwort auf eine empfangene Nachricht. Zwei ungewöhnliche Echos warten zusätzlich auf Hinweise aus dem Vault. Codes und Wörter kannst du direkt im Journal oder im Terminal senden. Dein Archiv sammelt Dossiers und Titel; Entdeckungen öffnen die Lichtsignaturen **Glut** und **Aurora**. Alle Inhalte bleiben auch nach Ablauf des CRYO-Zugangs spielbar.
 
-Starte mit `quests`, `quest arrival` und `inspect kammer` oder nutze die sichtbaren Signal-Buttons. `claim ID` holt eine erreichte Belohnung ab; `secrets`, `signal Code`, `echo Wort` und `theme` erschließen weitere Spuren. `npm run test:journey` prüft den vollständigen Spielweg, sichere Speicherung und Desktop-/Mobilbedienung. **[Journal-Handbuch und optionale Lösungen →](docs/wiki/Quests-und-Geheimnisse.md)**
+Starte mit `quests`, `quest arrival` und `inspect kammer` oder nutze die sichtbaren Signal-Buttons. `claim ID` holt eine erreichte Belohnung ab; `secrets`, `signal Code`, `echo Wort` und `theme` erschließen weitere Spuren. `npm run test:journey` prüft den Questweg, `npm run test:secrets` die zusätzlichen Geheimnisse, ihre echten Hinweise, sichere Speicherung und Desktop-/Mobilbedienung. **[Journal-Handbuch und optionale Lösungen →](docs/wiki/Quests-und-Geheimnisse.md)**

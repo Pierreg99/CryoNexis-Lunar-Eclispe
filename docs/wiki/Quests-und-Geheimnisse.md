@@ -2,7 +2,7 @@
 
 **[Handbuch](Home.md) / Entdecken**
 
-Das **Entdeckerjournal** verbindet sechs Aufträge, drei verborgene Übertragungen und zwei ungewöhnliche Echos. Es ist unabhängig vom zeitlich begrenzten CRYO-Zugang verfügbar. Öffne **JOURNAL** in der oberen Leiste oder tippe `quests` ins Terminal.
+Das **Entdeckerjournal** verbindet sechs Aufträge, sechs verborgene Übertragungen und zwei ungewöhnliche Echos. Es ist unabhängig vom zeitlich begrenzten CRYO-Zugang verfügbar. Öffne **JOURNAL** in der oberen Leiste oder tippe `quests` ins Terminal.
 
 ## Dein erster Auftrag
 
@@ -41,7 +41,11 @@ In jeder Szene liegt ein prüfbares Signal. Es reagiert auf deine aktuelle Situa
 
 Eine verschlossene Frequenz verlangt drei gelesene Übertragungen und einen daraus abgeleiteten Code. Zwei andere Erinnerungen reagieren auf Stille beziehungsweise zurückkehrendes Licht. Falsche Codes, unbekannte Wörter und wiederholte Belohnungen verändern den Spielstand nicht.
 
-Die Randnotizen im Vault weisen auf alte Geschichten und interaktive Abenteuer hin. `echo Wort` kann eine ungewöhnliche Antwort hervorbringen. Gefundene Echos erscheinen im Journal und im Archiv.
+Die drei weiteren Geheimnisse erzählen eigene Geschichten: **Der Rückweg** verbindet die vollständige Karte mit ihrem Anfang, **Die siebte Stimme** verbirgt ein Wort in zusammengehörenden Inschriften, und **Die Gegenspur** wartet auf deine Antwort auf eine empfangene Nachricht. Prüfe die genannten Orte bewusst und lies freigeschaltete Nachrichten im Archiv erneut. Ungelesene Hinweise lassen sich nicht durch einen zufällig richtigen Code ersetzen.
+
+Unter **Geheimnisse** kannst du einen Code über **SIGNAL SENDEN** oder ein einzelnes Wort über **ECHO SENDEN** eingeben. Beide Formen verwenden dieselben Regeln wie `signal Code` und `echo Wort`; Rückmeldungen bleiben direkt am Eingabefeld sichtbar.
+
+Die Randnotizen im Vault weisen außerdem auf alte Geschichten und interaktive Abenteuer hin. Ein Echo kann eine ungewöhnliche Antwort hervorbringen. Gefundene Geheimnisse und Echos erscheinen im Journal und im Archiv.
 
 ## Archiv und Signaturen
 
@@ -59,8 +63,8 @@ Belohnungen sind Geschichten und Gestaltung. Sie erzeugen keine CNX, verändern 
 | `inspect kammer` | Signal prüfen; auch finsternis, nexus, knoten, vault und nebel |
 | `inspect` | Signal der aktuellen Ansicht prüfen |
 | `secrets` | Entdeckungen und Hinweise lesen |
-| `signal Code` | Frequenz rekonstruieren |
-| `echo Wort` | Nach ungewöhnlichen Antworten suchen |
+| `signal Code` | Eine Frequenz rekonstruieren oder ihre Antwort senden |
+| `echo Wort` | Eine verborgene Stimme oder ungewöhnliche Antwort finden |
 | `theme` / `theme frost` | Signaturen lesen / auswählen |
 
 <details>
@@ -69,6 +73,12 @@ Belohnungen sind Geschichten und Gestaltung. Sie erzeugen keine CNX, verändern 
 Die **Frequenz 004** entsteht aus Kammer 04, 46 Schollen und Brechungsindex 1,3091: `signal 004-46-13091`. Zuvor Kammer, Finsternis und Nexus prüfen.
 
 Das **Archiv der Stille** öffnet sich mit `pause`, danach `inspect nebel`. **Zwischen Licht und Eis** erscheint nach einer Finsternisinspektion mit `phase Freisteller`, danach `inspect nexus`.
+
+Für **Der Rückweg** alle sechs Szenen prüfen und danach die Kammer erneut prüfen. Wird die Kammer als sechster Ort zum ersten Mal untersucht, ist eine weitere Prüfung nötig.
+
+Für **Die siebte Stimme** Knoten, Vault und Zeitlinie prüfen. Die Anfangsbuchstaben der vier Zeilen im Knotenfeld bilden **HIER**: `echo hier`. Groß-/Kleinschreibung dieses Wortes ist unerheblich.
+
+Für **Die Gegenspur** zuerst **Frequenz 004** empfangen. Ihre Archivnachricht fordert die Feldreihenfolge III — II — I: `signal 13091-46-004`. Die Ziffern innerhalb jedes Feldes bleiben unverändert.
 
 Die alten Antworten lauten `echo 42` und `echo xyzzy`. Ein erfolgreicher Fund wird einmal gespeichert; erneutes Senden erzeugt keine zweite Belohnung.
 

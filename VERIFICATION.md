@@ -1,5 +1,17 @@
 # Prüfung · CRYONEXUS
 
+## Eigene Geheimnisse · 14. Oktober 2026
+
+Aktueller Umfang: **15 lokale Laufzeitdateien mit 851.371 Bytes**, davon **154.717 Bytes Start-JavaScript**. Drei zusätzliche eigene Geheimnisse erweitern das Journal auf sechs: Rückweg, siebte Stimme und Gegenspur. Alle Antworten folgen tatsächlichen Szeneninschriften beziehungsweise einer bereits empfangenen Archivnachricht. Das sichtbare Echo-Formular besitzt lokale Rückmeldungen und erhält Eingabe und Fokus bei Markttakten. Bestehende Version-1-Spielstände bleiben kompatibel.
+
+`ACCEPTANCE_SUITE=reduced,simulation,startup,terminal,zen,capabilities npm test` bestand **in einem vollständigen gezielten Aufruf mit Exit-Code 0**: **37 reine Testgruppen**, **sechs Browser-Spielwege** und **neun HTTP-Akzeptanzszenarien über sechs Suites**. Die reinen Gruppen verteilen sich auf zehn Modell-, fünf Terminal-, drei Forschungs-, zehn Journal- und neun neue Geheimnisgruppen. Die sechs Spielwege prüfen Journal, neue Geheimnisse und Bedienung jeweils auf Desktop und Mobilgerät.
+
+Die neuen Tests leiten Code und Wort aus den tatsächlich angezeigten Hinweisen ab, unterscheiden eine Rückkehr vom ersten Kammerbesuch und verlangen alle passenden Spuren. Falsche, verfrühte und wiederholte Antworten verändern keinen Spielstand. Alte Drei-Geheimnis-Spielstände, neue vollständige Entdeckungen, Archiv, Neuladen, Neustart und unveränderte Markt-Zufallsfolgen wurden geprüft. Die sichtbaren Formulare bestehen Fokus-, Eingabe-, Touch- und Überlaufprüfungen ohne Grafikdownloads. Die bestehenden Akzeptanzszenarien bestätigen Simulation, Speicherung, Szenenfolgen, verzögerten Grafikstart, Terminal, Zen Show und Forschung.
+
+**Keine Wartegrenze oder Assertion wurde gelockert; es gab keinen Timeout.** Ein Datei-URL-Szenario wurde durch die verwaltete Chromium-Richtlinie blockiert. Die Prüfung verwendet Chromium **154.0.8037.57**. Alle sechs kritischen Skripte und CSS besitzen passende Inhaltsversionen; Dokumentationslinks und `git diff --check` bestehen.
+
+Das lokale Ergebnis liegt in `tests/artifacts/original-secrets-regression-report.json`, einschließlich `completeTargetedNpmInvocationPassed: true`, `npmTestExitCode: 0`, voller Laufzeit-SHA-256-Werte und Rohbericht. Artefakte bleiben lokal und ignoriert. Kontextwiederherstellung, GPU-Budget und Boot-Deadline wurden für diese reine Inhaltserweiterung nicht erneut geprüft; Engine, Shader und Timer blieben unverändert. Software-Rendering liefert keinen Hardware-FPS- oder Gesamt-VRAM-Nachweis.
+
 ## Entdeckerjournal · 14. Oktober 2026
 
 Aktueller Umfang: **15 lokale Laufzeitdateien mit 845.804 Bytes**, davon **149.898 Bytes Start-JavaScript**. Das Journal ergänzt sechs Story-Aufträge, drei Geheimnisse, zwei Terminal-Echos, verdiente Dossiers und Titel sowie die freischaltbaren Signaturen Glut und Aurora. Alle Inhalte bleiben unabhängig vom CRYO-Ablauf spielbar. Die erweiterte Version-1-Speicherung akzeptiert weiterhin alte Spielstände.

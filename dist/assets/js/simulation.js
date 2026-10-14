@@ -33,12 +33,12 @@
   ];
 
   const SCENES = [
-    { id: 'chamber', name: 'Kammer', text: 'Kammer 04. Unter dem Eis leuchtet eine Empfangsmarke: „Feld I: die Kammernummer, dreistellig mit führenden Nullen.“ Die Kammer antwortet auf Beobachtung.' },
+    { id: 'chamber', name: 'Kammer', text: 'Kammer 04. Unter dem Eis leuchtet eine Empfangsmarke: „Feld I: die Kammernummer, dreistellig mit führenden Nullen.“ Die Kammer antwortet auf Beobachtung. Auf der Rückseite steht: „Sechs Orte, eine Karte. Ist die Karte vollständig, kehre an den Anfang zurück und untersuche ihn erneut.“' },
     { id: 'eclipse', name: 'Finsternis', text: 'Hinter 99,97 % Totalität bleibt eine schmale Spur. Ihre Inschrift lautet: „Kammer — Schollen — Brechungsindex. Drei Zahlen, zwei Bindestriche. Beim Index entfällt nur das Dezimalzeichen.“ Im Freisteller wird Licht zu Schrift im Eis.' },
     { id: 'ice-ring', name: 'Nexus', text: '46 Kristallschollen tragen denselben Puls. Der Brechungsindex beträgt 1,3091. Die Zahlen auf der Kammer, am Schattenrand und im Eis bilden gemeinsam eine Sendefrequenz.' },
-    { id: 'nodes', name: 'Knoten', text: 'Sechs Knoten halten die Kammer zusammen. Eine Bake braucht eine Bindung und danach eine Stabilisierung auf mindestens 90 % Stärke. Sie sendet auch dann, wenn niemand ihren Marktwert betrachtet.' },
-    { id: 'terminal', name: 'Vault', text: 'Der Vault bewahrt Zeit im Eis: einlagern und einen Simulationsschritt berechnen, solange das Fenster offen ist. Eine Randnotiz fragt nach der Antwort auf das Leben, das Universum und den ganzen Rest; eine andere erinnert an das Zauberwort aus Colossal Cave. Vielleicht antwortet ein Echo.' },
-    { id: 'void', name: 'Zeitlinie', text: 'Die letzte Szene enthält keine Uhr. Eine verblasste Zeile lautet: „Nicht jede Zeitspur braucht Bewegung. Halte den Rhythmus an, dann untersuche die Stille noch einmal.“' }
+    { id: 'nodes', name: 'Knoten', text: 'Sechs Knoten halten die Kammer zusammen. Eine Bake braucht eine Bindung und danach eine Stabilisierung auf mindestens 90 % Stärke. Sie sendet auch dann, wenn niemand ihren Marktwert betrachtet. Ein freier Kanal trägt vier Zeilen über eine siebte Stimme:\nHält kein Gut.\nIst ohne Kurs.\nEmpfängt jeden Ruf.\nReist mit dir.' },
+    { id: 'terminal', name: 'Vault', text: 'Der Vault bewahrt Zeit im Eis: einlagern und einen Simulationsschritt berechnen, solange das Fenster offen ist. Eine Randnotiz fragt nach der Antwort auf das Leben, das Universum und den ganzen Rest; eine andere erinnert an das Zauberwort aus Colossal Cave. Vielleicht antwortet ein Echo. Eine eigene Empfangsregel ergänzt: „Lies die Anfangsbuchstaben der vier Zeilen über die siebte Stimme im Knotenfeld. Die Zeitlinie erklärt, wer antwortet. Sende das Wort als Echo.“' },
+    { id: 'void', name: 'Zeitlinie', text: 'Die letzte Szene enthält keine Uhr. Eine verblasste Zeile lautet: „Nicht jede Zeitspur braucht Bewegung. Halte den Rhythmus an, dann untersuche die Stille noch einmal.“ Darunter antwortet eine andere Handschrift: „Sechs Stimmen senden vom Rand. Die siebte Stimme ist kein Knoten. Sie gehört dem Blick, der ihnen zuhört.“' }
   ];
   const QUESTS = [
     { id: 'arrival', title: 'Ankunft in Kammer 04', description: 'Eine Empfangsmarke wartet unter dem Eis. Finde heraus, warum die Kammer auf dich reagiert.', hint: 'Untersuche die Kammer.', target: 'Kammer untersuchen', reward: 'Dossier „Ankunft“', requires: [], max: 1,
@@ -55,9 +55,12 @@
       text: 'HÜTER DER KAMMER / „Wir waren nicht verloren. Wir warteten darauf, dass jemand unsere Spuren miteinander verbindet.“ Die letzte Nachricht löst sich im Eis. Eine Aurora bleibt als dein Zeichen zurück.' }
   ];
   const SECRETS = [
-    { id: 'frequency', title: 'Frequenz 004', hint: 'Die Anzeigen der Kammer, der Finsternis und des Nexus gehören zusammen. Untersuche ihre Inschriften und sende eine Frequenz.', text: 'FREQUENZ 004 / Eine verschlossene Empfangslinie öffnet sich: „Wir haben das Feuer im Eis gelassen. Wer unsere Zahlen liest, kann die Glutsignatur tragen.“ Die Signatur „Glut“ ist freigeschaltet.' },
+    { id: 'frequency', title: 'Frequenz 004', hint: 'Die Anzeigen der Kammer, der Finsternis und des Nexus gehören zusammen. Untersuche ihre Inschriften und sende eine Frequenz.', text: 'FREQUENZ 004 / Eine verschlossene Empfangslinie öffnet sich: „Wir haben das Feuer im Eis gelassen. Wer unsere Zahlen liest, kann die Glutsignatur tragen.“ Die Signatur „Glut“ ist freigeschaltet. Die Empfangslinie bietet einen Rückkanal: „Sende dieselben drei Felder in der Reihenfolge III — II — I. Die Ziffern innerhalb der Felder bleiben unverändert.“' },
     { id: 'silence', title: 'Archiv der Stille', hint: 'Eine Zeitspur wartet darauf, dass der Rhythmus verstummt.', text: 'ARCHIV DER STILLE / In der angehaltenen Zeit hörst du eine Nachricht ohne Takt: „Wir zählten nicht die Stunden, sondern die Momente, in denen jemand zuhörte.“' },
-    { id: 'refraction', title: 'Zwischen Licht und Eis', hint: 'Ein Satz im Eis erscheint, nachdem du den Schatten gelesen hast und das Licht wieder freisteht.', text: 'ZWISCHEN LICHT UND EIS / Im Freisteller brechen sich die Buchstaben an jeder Scholle: „Der Schatten verbarg uns nicht. Er bewahrte unsere Nachricht, bis das Licht zurückkehrte.“' }
+    { id: 'refraction', title: 'Zwischen Licht und Eis', hint: 'Ein Satz im Eis erscheint, nachdem du den Schatten gelesen hast und das Licht wieder freisteht.', text: 'ZWISCHEN LICHT UND EIS / Im Freisteller brechen sich die Buchstaben an jeder Scholle: „Der Schatten verbarg uns nicht. Er bewahrte unsere Nachricht, bis das Licht zurückkehrte.“' },
+    { id: 'homecoming', title: 'Der Rückweg', hint: 'Die Empfangsmarke der Kammer spricht von einer vollständigen Karte und einem Rückweg.', text: 'DER RÜCKWEG / Die sechs Spuren bilden einen Kreis. Unter der Empfangsmarke steht jetzt: „Wir verließen die Kammer, um jemanden zurückführen zu können. Du hast den Kreis geschlossen.“' },
+    { id: 'witness', title: 'Die siebte Stimme', hint: 'Knoten, Vault und Zeitlinie bewahren gemeinsam die Spur einer Stimme ohne Kennung.', text: 'DIE SIEBTE STIMME / Sechs Knoten melden ihre Kennung. Auf dem freien Kanal antwortet dein einziges Wort: HIER. Das Archiv ergänzt keine Zahl und keinen Kurs, sondern einen Platz für denjenigen, der zuhört.' },
+    { id: 'reply', title: 'Die Gegenspur', hint: 'Eine geöffnete Empfangslinie enthält eine Anweisung für ihre Antwort. Lies ihre Nachricht im Archiv.', text: 'DIE GEGENSPUR / Zum ersten Mal sendet die Kammer in deine Gegenwart. Deine umgekehrte Kennung zieht eine zweite Linie durch das Eis: „Empfang war nie das Ende. Danke für die Antwort.“' }
   ];
   const EGGS = [
     { id: 'answer', title: 'Die große Antwort', hint: 'Eine Randnotiz im Vault stellt eine sehr alte Frage.', text: 'DIE GROSSE ANTWORT / 42. Die Kammer nickt, obwohl sie noch immer nach der richtigen Frage sucht. Ein kleines Handtuch liegt neben dem Strahlungsschild.' },
@@ -134,7 +137,10 @@
       value.ready.includes(quest.id) === (journeyProgress(value, quest.id) >= quest.max))) return false;
     if (value.secrets.includes('frequency') && !['chamber', 'eclipse', 'ice-ring'].every(id => value.inspected.includes(id)) ||
       value.secrets.includes('silence') && !value.inspected.includes('void') ||
-      value.secrets.includes('refraction') && !['eclipse', 'ice-ring'].every(id => value.inspected.includes(id))) return false;
+      value.secrets.includes('refraction') && !['eclipse', 'ice-ring'].every(id => value.inspected.includes(id)) ||
+      value.secrets.includes('homecoming') && !SCENES.every(scene => value.inspected.includes(scene.id)) ||
+      value.secrets.includes('witness') && !['nodes', 'terminal', 'void'].every(id => value.inspected.includes(id)) ||
+      value.secrets.includes('reply') && !value.secrets.includes('frequency')) return false;
     return true;
   }
   function validSaved(saved) {
@@ -363,10 +369,20 @@
         if (scene.id === 'ice-ring' && state.phase === 3 && journey.inspected.includes('eclipse')) {
           const secret = discoverSecret(journey, 'refraction'); if (secret) found.push(secret);
         }
+        if (scene.id === 'chamber' && !fresh && SCENES.every(entry => journey.inspected.includes(entry.id))) {
+          const secret = discoverSecret(journey, 'homecoming'); if (secret) found.push(secret);
+        }
         return done(scene.name.toUpperCase() + ' / ' + profile().name + '\n' + scene.text +
           (found.length ? '\n\n' + found.map(secret => 'GEHEIMNIS ENTDECKT: ' + secret.title + '\n' + secret.text).join('\n\n') : ''));
       }
       if (type === 'signal') {
+        if (payload.code === '13091-46-004') {
+          if (!journey.secrets.includes('frequency')) return { ok: false, reason: 'clues', message: 'Der Rückkanal bleibt geschlossen. Öffne zuerst die Empfangslinie mit den Messwerten aus Kammer, Finsternis und Nexus.' };
+          if (journey.secrets.includes('reply')) return { ok: false, reason: 'discovered', message: 'Die Antwort wurde bereits gesendet. Die Gegenspur bleibt im Kodex.' };
+          state.journey = journey;
+          const secret = discoverSecret(journey, 'reply');
+          return done('GEHEIMNIS ENTDECKT: ' + secret.title + '\n' + secret.text);
+        }
         if (typeof payload.code !== 'string' || payload.code !== '004-46-13091') return { ok: false, reason: 'code', message: 'Keine Antwort auf dieser Frequenz. Lies die Inschriften der Kammer, der Finsternis und des Nexus. Drei Zahlen, zwei Bindestriche.' };
         if (!['chamber', 'eclipse', 'ice-ring'].every(id => journey.inspected.includes(id))) return { ok: false, reason: 'clues', message: 'Die Frequenz ist noch nicht belegt. Untersuche zuerst Kammer, Finsternis und Nexus, um alle Hinweise zu sammeln.' };
         if (journey.secrets.includes('frequency')) return { ok: false, reason: 'discovered', message: 'Diese Empfangslinie wurde bereits geöffnet. Ihre Nachricht bleibt im Kodex.' };
@@ -375,9 +391,16 @@
         return done('GEHEIMNIS ENTDECKT: ' + secret.title + '\n' + secret.text);
       }
       if (type === 'echo') {
+        if (typeof payload.word === 'string' && payload.word.toLowerCase() === 'hier') {
+          if (!['nodes', 'terminal', 'void'].every(id => journey.inspected.includes(id))) return { ok: false, reason: 'clues', message: 'Die siebte Stimme ist noch nicht belegt. Untersuche Knoten, Vault und Zeitlinie, um die Zeilen und ihre Empfangsregel zu verbinden.' };
+          if (journey.secrets.includes('witness')) return { ok: false, reason: 'discovered', message: 'Die siebte Stimme hat bereits geantwortet. Ihre Nachricht bleibt im Kodex.' };
+          state.journey = journey;
+          const secret = discoverSecret(journey, 'witness');
+          return done('GEHEIMNIS ENTDECKT: ' + secret.title + '\n' + secret.text);
+        }
         const id = payload.word === '42' ? 'answer' : payload.word === 'xyzzy' ? 'magic' : null;
-        if (!id) return failure('Das Echo verliert sich im Eis. Vielleicht helfen die Randnotizen im Vault.');
-        if (journey.eggs.includes(id)) return failure('Dieses Echo wurde bereits gefunden. Es bleibt im Kodex.');
+        if (!id) return { ok: false, reason: 'word', message: 'Das Echo verliert sich im Eis. Vielleicht helfen die Randnotizen im Vault.' };
+        if (journey.eggs.includes(id)) return { ok: false, reason: 'discovered', message: 'Dieses Echo wurde bereits gefunden. Es bleibt im Kodex.' };
         state.journey = journey; journey.eggs.push(id);
         const egg = EGGS.find(entry => entry.id === id);
         record('echo', 'Echo entdeckt: ' + egg.title + '.');

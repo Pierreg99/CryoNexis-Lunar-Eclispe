@@ -68,3 +68,5 @@ Die CRYO-Freischaltung lädt außerdem [Forschungsfähigkeiten](Forschung.md). `
 ## Quests, Signale und Geheimnisse
 
 `quests` zeigt sechs Story-Aufträge; `quest ID` nimmt einen verfügbaren Auftrag an und `claim ID` holt eine einmalige Belohnung ab. `inspect` prüft die aktuelle Szene; ein Ortsname wie `inspect nexus` wählt ihr Signal direkt. `secrets` zeigt Funde und Hinweise. `signal Code`, `echo Wort` und `theme [ID]` erschließen Geheimnisse, ungewöhnliche Antworten und freigeschaltete Lichtsignaturen. Alle Befehle besitzen eigene Hilfe. Das [Journal-Handbuch](Quests-und-Geheimnisse.md) erklärt die Voraussetzungen und enthält bewusst verborgene Lösungen.
+
+Die sechs Geheimnisse umfassen auch eigene Wort-, Rückweg- und Antwortspuren. Codes und Echo-Wörter lassen sich ebenso über die sichtbaren Journal-Formulare senden; gespeicherte Entdeckungen und Voraussetzungen bleiben gleich.

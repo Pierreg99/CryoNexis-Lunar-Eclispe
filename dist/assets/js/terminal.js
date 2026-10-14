@@ -16,7 +16,7 @@
     inspect: [0, 1, 'inspect [Szene]', 'inspect nexus', 'Prüft das Signal einer Szene. Ohne Argument wird die aktuelle Ansicht verwendet. Szenen: kammer, finsternis, nexus, knoten, vault, nebel.'],
     secrets: [0, 0, 'secrets', 'secrets', 'Zeigt entdeckte Geheimnisse und behutsame Hinweise auf ungelöste Übertragungen.'],
     signal: [1, 1, 'signal Code', 'signal Kennung-Schollen-Index', 'Rekonstruiert eine Frequenz aus den Szenensignalen. Falsche Versuche verbrauchen weder CNX noch Kohärenz.'],
-    echo: [1, 1, 'echo Wort', 'echo 42', 'Schickt ein einzelnes Wort in die Dunkelheit. Manche alten Antworten warten auf die richtige Frage.'],
+    echo: [1, 1, 'echo Wort', 'echo 42', 'Schickt ein einzelnes Wort in die Dunkelheit. Anfangsbuchstaben der Inschriften können eine eigene Stimme öffnen; auch alte Antworten warten auf die richtige Frage.'],
     theme: [0, 1, 'theme [Signatur]', 'theme frost', 'Zeigt oder wählt eine freigeschaltete Lichtsignatur. Signaturen verändern die Oberfläche und bleiben lokal gespeichert.'],
     cryo: [1, 1, 'cryo unlock', 'cryo unlock', 'Alternative Schreibweise für unlock cryo. Lädt die Forschungsfähigkeiten bei aktivem Zugang.'],
     missions: [0, 0, 'missions', 'missions', 'Zeigt Forschungsfortschritt, Fähigkeiten und die nächsten Freischaltungen.'],

@@ -2,13 +2,15 @@
 
 **[Handbuch](Home.md) / Nachweise**
 
-Die Prüfung vom **14. Oktober 2026** deckt alle elf Suites mit 14 lokalen HTTP-Szenarien, zwei Bedienungs-Browserabläufen und 18 reinen Testgruppen ab. Kombinierte Vollversuche trafen Grafik-Wartegrenzen; die betroffenen Prüfungen bestanden separat mit unveränderten Assertions. Details stehen im [Prüfbericht](../../VERIFICATION.md).
+Die frühere Bedienungsprüfung vom **14. Oktober 2026** deckt alle elf Suites mit 14 lokalen HTTP-Szenarien, zwei Bedienungs-Browserabläufen und 18 reinen Testgruppen ab. Kombinierte Vollversuche trafen Grafik-Wartegrenzen; die betroffenen Prüfungen bestanden separat mit unveränderten Assertions. Details und die aktuelle Prüfung stehen im [Prüfbericht](../../VERIFICATION.md).
 
 Der dokumentierte vollständige Lauf vom **10. Oktober 2026** bestand zehn Modell-Testgruppen und zehn HTTP-Browserdurchläufe mit Chromium 151.0.7922.173. Der maßgebliche [Prüfbericht](../../VERIFICATION.md) enthält Ergebnisse und Messgrenzen.
 
 Die Terminal-Erweiterung vom 11. Oktober ergänzt einschließlich CRYO-Freischaltung fünf reine Terminal-Testgruppen und gezielte Browserprüfungen. Die vorherige Vollprüfung der Engine wird dadurch nicht als neu ausgeführter Hardwaretest ausgegeben.
 
 Die Journal-Erweiterung ergänzt zehn reine Modell-/Terminal-Testgruppen und zwei Browser-Spielwege. `npm run test:journey` prüft Questnachweise, versteckte Übertragungen, einmalige Belohnungen, alte und neue Speicherstände, unveränderte Markt-Zufallsfolge sowie Desktop- und Mobilbedienung.
+
+Die drei zusätzlichen eigenen Geheimnisse ergänzen neun reine Testgruppen und zwei Browser-Spielwege. `npm run test:secrets` leitet Antworten aus den tatsächlich angezeigten Hinweisen ab und prüft Voraussetzungen, Wiederholungen, alte Drei-Geheimnis-Spielstände, Archiv, Neuladen, Neustart sowie die sichtbaren Signal- und Echo-Formulare auf Desktop und Mobilgerät. Damit umfasst `npm test` 37 reine Gruppen und sechs Bedienungs-Spielwege vor den Akzeptanzsuites.
 
 ## Ausführen
 
@@ -30,7 +32,7 @@ Die App in `dist/` benötigt keine dieser Entwicklungsabhängigkeiten. `npm run 
 | `ACCEPTANCE_SUITE=recovery npm test` | Beide Kontexte verlieren und getrennt wiederherstellen |
 | `ACCEPTANCE_SUITE=gpu npm test` | DPR 2, Viertel-Bloom, Target-Lebensdauer, tatsächliche GPU-Freigabe und Rückkehr |
 | `ACCEPTANCE_SUITE=simulation npm test` | Abrechnung, Gates, Zinsen, Speicherung, Szenenfolgen und Speicherfehler |
-| `ACCEPTANCE_SUITE=terminal npm test` | Alle 27 Befehle, Hilfe, Belege, Aufgaben, sichere Argumente und mobile Ausgabe |
+| `ACCEPTANCE_SUITE=terminal npm test` | Terminalbefehle, Hilfe, Belege, Aufgaben, sichere Argumente und mobile Ausgabe |
 | `ACCEPTANCE_SUITE=capabilities npm test` | Fähigkeiten laden, Aufgaben lösen, Fortschritt speichern, Szenenfolgen und Ablauf |
 | `ACCEPTANCE_SUITE=zen npm test` | Show-Steuerung, reduzierte Bewegung und alle sechs gerenderten Szenen |
 | `ACCEPTANCE_SUITE=boot npm test` | Unabhängiger 4.200-ms-Fail-Safe |

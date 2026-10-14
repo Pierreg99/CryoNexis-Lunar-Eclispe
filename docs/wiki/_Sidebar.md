@@ -6,6 +6,7 @@
 
 - [Schnellstart](Schnellstart.md)
 - [Bedienung](Bedienung.md)
+- [Quests und Geheimnisse](Quests-und-Geheimnisse.md)
 - [Terminal](Terminal.md)
 - [Forschung und Fähigkeiten](Forschung.md)
 - [Regeln und Zahlen](Simulation.md)

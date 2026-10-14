@@ -32,6 +32,40 @@
       prices: [0.987, 1.015, 0.971, 1.022, 0.983, 0.995], liquidity: [0.94, 1.08, 0.84, 1.14, 0.86, 0.98], bias: [-0.00014, 0.00012, -0.00030, 0.00020, -0.00020, -0.00005] }
   ];
 
+  const SCENES = [
+    { id: 'chamber', name: 'Kammer', text: 'Kammer 04. Unter dem Eis leuchtet eine Empfangsmarke: „Feld I: die Kammernummer, dreistellig mit führenden Nullen.“ Die Kammer antwortet auf Beobachtung.' },
+    { id: 'eclipse', name: 'Finsternis', text: 'Hinter 99,97 % Totalität bleibt eine schmale Spur. Ihre Inschrift lautet: „Kammer — Schollen — Brechungsindex. Drei Zahlen, zwei Bindestriche. Beim Index entfällt nur das Dezimalzeichen.“ Im Freisteller wird Licht zu Schrift im Eis.' },
+    { id: 'ice-ring', name: 'Nexus', text: '46 Kristallschollen tragen denselben Puls. Der Brechungsindex beträgt 1,3091. Die Zahlen auf der Kammer, am Schattenrand und im Eis bilden gemeinsam eine Sendefrequenz.' },
+    { id: 'nodes', name: 'Knoten', text: 'Sechs Knoten halten die Kammer zusammen. Eine Bake braucht eine Bindung und danach eine Stabilisierung auf mindestens 90 % Stärke. Sie sendet auch dann, wenn niemand ihren Marktwert betrachtet.' },
+    { id: 'terminal', name: 'Vault', text: 'Der Vault bewahrt Zeit im Eis: einlagern und einen Simulationsschritt berechnen, solange das Fenster offen ist. Eine Randnotiz fragt nach der Antwort auf das Leben, das Universum und den ganzen Rest; eine andere erinnert an das Zauberwort aus Colossal Cave. Vielleicht antwortet ein Echo.' },
+    { id: 'void', name: 'Zeitlinie', text: 'Die letzte Szene enthält keine Uhr. Eine verblasste Zeile lautet: „Nicht jede Zeitspur braucht Bewegung. Halte den Rhythmus an, dann untersuche die Stille noch einmal.“' }
+  ];
+  const QUESTS = [
+    { id: 'arrival', title: 'Ankunft in Kammer 04', description: 'Eine Empfangsmarke wartet unter dem Eis. Finde heraus, warum die Kammer auf dich reagiert.', hint: 'Untersuche die Kammer.', target: 'Kammer untersuchen', reward: 'Dossier „Ankunft“', requires: [], max: 1,
+      text: 'ANKUNFT / Du bist nicht allein. Die Kammer hat keine Namen gespeichert, nur den ersten Blick jedes Zeitzeugen. Dein Blick gehört nun dazu.' },
+    { id: 'edge', title: 'Der Schatten hat einen Rand', description: 'Ein Rest Licht durchdringt die Totalität. Lies seine Spur, wenn die Korona sichtbar ist.', hint: 'Wähle Korona und untersuche die Finsternis. Ein Phasenwechsel kostet Kohärenz.', target: 'Finsternis während Korona untersuchen', reward: 'Dossier „Hinter dem Rand“', requires: ['arrival'], max: 1,
+      text: 'HINTER DEM RAND / Die Finsternis ist keine leere Fläche. An ihrem Rand wandert eine Nachricht entlang, die nur im gemeinsamen Licht der Kammer und des Nexus lesbar wird.' },
+    { id: 'cartographer', title: 'Kartograf des Unsichtbaren', description: 'Sechs Orte erzählen dieselbe Geschichte aus verschiedenen Richtungen. Verbinde ihre Spuren.', hint: 'Untersuche Kammer, Finsternis, Nexus, Knoten, Vault und Zeitlinie.', target: 'Alle sechs Szenen untersuchen', reward: 'Titel „Zeitzeuge“', requires: ['edge'], max: 6,
+      text: 'ZEITZEUGE / Deine Karte besteht aus Blicken: Eis, Schatten, Ring, Bake, Vault und Nebel. Erst gemeinsam zeigen sie den Weg der verschwundenen Besatzung.' },
+    { id: 'beacon', title: 'Eine Bake im Eis', description: 'Eine verlässliche Verbindung trägt weiter als ein flüchtiges Signal. Stelle eine Bake wieder her.', hint: 'Binde einen Knoten und stabilisiere ihn danach auf mindestens 90 % Stärke. Binden kostet 1.200 CNX, Stabilisieren 700 CNX.', target: 'Gebundenen Knoten auf mindestens 90 % stabilisieren', reward: 'Dossier „Die letzte Bake“', requires: ['arrival'], max: 1,
+      text: 'DIE LETZTE BAKE / Eine Verbindung wurde vor langer Zeit bewusst offen gehalten. Deine Stabilisierung schließt ihren Kreis. Im Eis antwortet eine zweite Stimme: „Empfang bestätigt.“' },
+    { id: 'yield', title: 'Zeit im Eis', description: 'Die Bake braucht eine Nachricht, die länger als einen Augenblick hält. Bewahre Zeit im Vault.', hint: 'Halte mindestens 1.000 CNX im offenen Vault und erzeuge positiven Ertrag mit einem Simulationsschritt. „vault“ zeigt die Zugangsbedingungen.', target: '1.000 CNX im Vault und positiven Ertrag nachweisen', reward: 'Dossier „Zeit im Eis“', requires: ['beacon'], max: 1,
+      text: 'ZEIT IM EIS / Der Ertrag ist nur ein Messzeichen. Er beweist, dass eine Nachricht über den nächsten Takt hinaus erhalten blieb. Die Kammer hat gelernt, auf eine Antwort zu warten.' },
+    { id: 'remembrance', title: 'Die Kammer erinnert sich', description: 'Zwei verborgene Erinnerungen reichen, um die verlorene Nachricht zu vervollständigen.', hint: 'Entdecke zwei Geheimnisse. Untersuche die Anzeigen, die angehaltene Zeit und das Eis im Freisteller.', target: 'Zwei Geheimnisse entdecken', reward: 'Titel „Hüter der Kammer“ und Aurorasignatur', requires: ['cartographer', 'yield'], max: 2,
+      text: 'HÜTER DER KAMMER / „Wir waren nicht verloren. Wir warteten darauf, dass jemand unsere Spuren miteinander verbindet.“ Die letzte Nachricht löst sich im Eis. Eine Aurora bleibt als dein Zeichen zurück.' }
+  ];
+  const SECRETS = [
+    { id: 'frequency', title: 'Frequenz 004', hint: 'Die Anzeigen der Kammer, der Finsternis und des Nexus gehören zusammen. Untersuche ihre Inschriften und sende eine Frequenz.', text: 'FREQUENZ 004 / Eine verschlossene Empfangslinie öffnet sich: „Wir haben das Feuer im Eis gelassen. Wer unsere Zahlen liest, kann die Glutsignatur tragen.“ Die Signatur „Glut“ ist freigeschaltet.' },
+    { id: 'silence', title: 'Archiv der Stille', hint: 'Eine Zeitspur wartet darauf, dass der Rhythmus verstummt.', text: 'ARCHIV DER STILLE / In der angehaltenen Zeit hörst du eine Nachricht ohne Takt: „Wir zählten nicht die Stunden, sondern die Momente, in denen jemand zuhörte.“' },
+    { id: 'refraction', title: 'Zwischen Licht und Eis', hint: 'Ein Satz im Eis erscheint, nachdem du den Schatten gelesen hast und das Licht wieder freisteht.', text: 'ZWISCHEN LICHT UND EIS / Im Freisteller brechen sich die Buchstaben an jeder Scholle: „Der Schatten verbarg uns nicht. Er bewahrte unsere Nachricht, bis das Licht zurückkehrte.“' }
+  ];
+  const EGGS = [
+    { id: 'answer', title: 'Die große Antwort', hint: 'Eine Randnotiz im Vault stellt eine sehr alte Frage.', text: 'DIE GROSSE ANTWORT / 42. Die Kammer nickt, obwohl sie noch immer nach der richtigen Frage sucht. Ein kleines Handtuch liegt neben dem Strahlungsschild.' },
+    { id: 'magic', title: 'Ein sehr altes Zauberwort', hint: 'Eine Randnotiz im Vault erinnert an die Anfänge interaktiver Welten.', text: 'EIN SEHR ALTES ZAUBERWORT / Eine Höhle blitzt im Eis auf. Nichts geschieht — außer dass ein uraltes Abenteuer für einen Augenblick zurückgrüßt.' }
+  ];
+  const THEMES = [{ id: 'frost', name: 'Frost' }, { id: 'aurora', name: 'Aurora' }, { id: 'ember', name: 'Glut' }];
+  const JOURNEY_HISTORY = ['quest', 'claim', 'inspect', 'secret', 'echo', 'theme'];
+
   const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
   const money = value => Math.round((value + Number.EPSILON) * 10000) / 10000;
   const quantityRound = value => Math.round(value * 1000000) / 1000000;
@@ -65,10 +99,50 @@
       (!value.networkUnlocked || value.observed.length >= 2) && (!value.calibrated.length || value.networkUnlocked) &&
       (!value.archiveUnlocked || value.observed.length === 5 && value.calibrated.length >= 3 && value.networkUnlocked) && (!value.decoded || value.archiveUnlocked);
   }
+  function journeyInitial() {
+    return { accepted: [], ready: [], claimed: [], inspected: [], coronaInspected: false,
+      stabilized: [], vaultYield: false, secrets: [], eggs: [], theme: 'frost' };
+  }
+  function journeyProgress(journey, id) {
+    switch (id) {
+      case 'arrival': return journey.inspected.includes('chamber') ? 1 : 0;
+      case 'edge': return journey.coronaInspected ? 1 : 0;
+      case 'cartographer': return journey.inspected.length;
+      case 'beacon': return journey.stabilized.length ? 1 : 0;
+      case 'yield': return journey.vaultYield ? 1 : 0;
+      case 'remembrance': return Math.min(2, journey.secrets.length);
+      default: return 0;
+    }
+  }
+  function themeUnlocked(journey, id) {
+    return id === 'frost' || id === 'ember' && journey.secrets.includes('frequency') ||
+      id === 'aurora' && journey.claimed.includes('remembrance');
+  }
+  function validJourney(value, saved) {
+    if (!exactKeys(value, ['accepted', 'ready', 'claimed', 'inspected', 'coronaInspected', 'stabilized', 'vaultYield', 'secrets', 'eggs', 'theme'])) return false;
+    const ids = catalog => catalog.map(entry => entry.id);
+    const boundedIds = (list, allowed) => Array.isArray(list) && list.length <= allowed.length &&
+      new Set(list).size === list.length && list.every(id => typeof id === 'string' && allowed.includes(id));
+    if (!boundedIds(value.accepted, ids(QUESTS)) || !boundedIds(value.ready, ids(QUESTS)) || !boundedIds(value.claimed, ids(QUESTS)) ||
+      !boundedIds(value.inspected, ids(SCENES)) || !boundedIds(value.stabilized, ids(BASE)) || !boundedIds(value.secrets, ids(SECRETS)) || !boundedIds(value.eggs, ids(EGGS)) ||
+      typeof value.coronaInspected !== 'boolean' || typeof value.vaultYield !== 'boolean' || !ids(THEMES).includes(value.theme) || !themeUnlocked(value, value.theme)) return false;
+    if (value.coronaInspected && !value.inspected.includes('eclipse') ||
+      value.vaultYield && (!saved.vault || !finite(saved.vault.earned, 0.0001, MONEY_LIMIT))) return false;
+    if (!value.ready.every(id => value.accepted.includes(id)) || !value.claimed.every(id => value.ready.includes(id))) return false;
+    if (!QUESTS.every(quest => !value.accepted.includes(quest.id) ||
+      quest.requires.every(id => value.claimed.includes(id)) &&
+      value.ready.includes(quest.id) === (journeyProgress(value, quest.id) >= quest.max))) return false;
+    if (value.secrets.includes('frequency') && !['chamber', 'eclipse', 'ice-ring'].every(id => value.inspected.includes(id)) ||
+      value.secrets.includes('silence') && !value.inspected.includes('void') ||
+      value.secrets.includes('refraction') && !['eclipse', 'ice-ring'].every(id => value.inspected.includes(id))) return false;
+    return true;
+  }
   function validSaved(saved) {
     if (saved && Object.prototype.hasOwnProperty.call(saved, 'expedition') && !validExpedition(saved.expedition)) return false;
+    if (saved && Object.prototype.hasOwnProperty.call(saved, 'journey') && !validJourney(saved.journey, saved)) return false;
     const savedKeys = ['version', 'seed', 'rng', 'phase', 'tick', 'cycle', 'paused', 'cash', 'coherence', 'feesPaid', 'historySeq', 'history', 'nodes', 'vault'];
     if (saved && Object.prototype.hasOwnProperty.call(saved, 'expedition')) savedKeys.push('expedition');
+    if (saved && Object.prototype.hasOwnProperty.call(saved, 'journey')) savedKeys.push('journey');
     if (!exactKeys(saved, savedKeys) ||
       saved.version !== VERSION || !integer(saved.seed, 0, 4294967295) ||
       !integer(saved.rng, 0, 4294967295) || !integer(saved.phase, 0, 4) || !integer(saved.tick, 0, 100000000) ||
@@ -86,10 +160,10 @@
       typeof node.bound === 'boolean' && finite(node.change, -0.6, 0.6) && precise(node.change, 4))) return false;
     let previous = 0;
     let previousTick = 0;
-    const historyTypes = ['observe', 'calibrate', 'decode', 'discovery', 'unlock', 'tick', 'step', 'phase', 'auto-phase', 'pause', 'resume', 'buy', 'sell', 'link', 'unlink', 'stabilize', 'deposit', 'withdraw'];
+    const historyTypes = ['observe', 'calibrate', 'decode', 'discovery', 'unlock', 'tick', 'step', 'phase', 'auto-phase', 'pause', 'resume', 'buy', 'sell', 'link', 'unlink', 'stabilize', 'deposit', 'withdraw'].concat(JOURNEY_HISTORY);
     if (!saved.history.every(entry => {
       if (!exactKeys(entry, ['id', 'tick', 'type', 'text', 'phase']) || !integer(entry.id, previous + 1, saved.historySeq) || !integer(entry.tick, previousTick, saved.tick) ||
-        !integer(entry.phase, 0, 4) || !historyTypes.includes(entry.type) ||
+        !integer(entry.phase, 0, 4) || !historyTypes.includes(entry.type) || JOURNEY_HISTORY.includes(entry.type) && !saved.journey ||
         typeof entry.text !== 'string' || entry.text.length > 320) return false;
       previous = entry.id;
       previousTick = entry.tick;
@@ -166,6 +240,28 @@
         vault: { open: open, cryoUnlocked: unlocked, unlockDeadline: unlockDeadline, balance: state.vault.balance, apr: apr, earned: state.vault.earned,
           conditions: conditions, accruing: open && state.vault.balance > 0 } };
     }
+    function journeySnapshot() {
+      const journey = state.journey || journeyInitial();
+      const quests = QUESTS.map(function (quest) {
+        const missing = quest.requires.filter(id => !journey.claimed.includes(id));
+        const status = journey.claimed.includes(quest.id) ? 'claimed' : journey.ready.includes(quest.id) ? 'ready' :
+          journey.accepted.includes(quest.id) ? 'active' : missing.length ? 'locked' : 'available';
+        const prerequisite = missing.length ? 'Hole zuerst die Belohnung für ' + missing.map(id => '„' + QUESTS.find(entry => entry.id === id).title + '“').join(' und ') + ' ab. ' : '';
+        return { id: quest.id, title: quest.title, description: quest.description, hint: prerequisite + quest.hint,
+          target: quest.target, reward: quest.reward, status: status, progress: { value: journeyProgress(journey, quest.id), max: quest.max } };
+      });
+      const discoveries = (catalog, found) => catalog.map(function (entry) {
+        const item = { id: entry.id, title: entry.title, discovered: found.includes(entry.id), hint: entry.hint };
+        if (item.discovered) item.text = entry.text;
+        return item;
+      });
+      const lore = QUESTS.filter(quest => journey.claimed.includes(quest.id)).map(quest => ({ id: 'quest-' + quest.id, title: quest.title, text: quest.text }))
+        .concat(SECRETS.filter(secret => journey.secrets.includes(secret.id)).map(secret => ({ id: 'secret-' + secret.id, title: secret.title, text: secret.text })))
+        .concat(EGGS.filter(egg => journey.eggs.includes(egg.id)).map(egg => ({ id: 'egg-' + egg.id, title: egg.title, text: egg.text })));
+      return { quests: quests, secrets: discoveries(SECRETS, journey.secrets), eggs: discoveries(EGGS, journey.eggs), lore: lore,
+        themes: THEMES.map(theme => ({ id: theme.id, name: theme.name, unlocked: themeUnlocked(journey, theme.id) })), theme: journey.theme,
+        inspected: journey.inspected.slice(), claimedCount: journey.claimed.length, secretCount: journey.secrets.length };
+    }
     function snapshot() {
       const values = derived();
       const current = profile();
@@ -173,6 +269,7 @@
       const expedition = clone(state.expedition || expeditionInitial());
       return {
         expedition: expedition,
+        journey: journeySnapshot(),
         version: VERSION, seed: state.seed, restored: restored, restoreError: restoreError,
         phase: state.phase, phaseName: current.name, tick: state.tick, minutes: state.tick * 5,
         cycle: state.cycle, paused: state.paused, cash: state.cash, equity: values.equity,
@@ -205,6 +302,15 @@
           research.archiveUnlocked = true; record('discovery', 'Zeitarchiv freigeschaltet: fünf Phasen, drei Resonanzen und Vault-Ertrag nachgewiesen.');
         }
       }
+      if (state.journey) {
+        const journey = state.journey;
+        QUESTS.forEach(function (quest) {
+          if (journey.accepted.includes(quest.id) && !journey.ready.includes(quest.id) && journeyProgress(journey, quest.id) >= quest.max) {
+            journey.ready.push(quest.id);
+            record('quest', 'Auftrag erfüllt: ' + quest.title + '. Die Belohnung wartet im Entdeckerjournal.');
+          }
+        });
+      }
       emit(); return { ok: true, message: message };
     }
     function findNode(id) { return state.nodes.findIndex(node => node.id === id); }
@@ -213,6 +319,81 @@
     }
     function amountValid(value) { return finite(value, 0.0001, MONEY_LIMIT) && precise(value, 4); }
     function quantityValid(value) { return finite(value, 0.000001, MAX_QUANTITY) && precise(value, 6); }
+
+    function discoverSecret(journey, id) {
+      if (journey.secrets.includes(id)) return null;
+      const secret = SECRETS.find(entry => entry.id === id);
+      journey.secrets.push(id);
+      record('secret', 'Geheimnis entdeckt: ' + secret.title + '.');
+      return secret;
+    }
+    function journeyAction(type, payload) {
+      const journey = state.journey || journeyInitial();
+      if (type === 'quest' || type === 'claim') {
+        const quest = QUESTS.find(entry => entry.id === payload.id);
+        if (!quest) return failure('Dieser Auftrag existiert nicht. „quests“ zeigt alle Aufträge.');
+        if (type === 'quest') {
+          if (journey.accepted.includes(quest.id)) return failure('Dieser Auftrag wurde bereits angenommen. Dein Fortschritt bleibt erhalten.');
+          const missing = quest.requires.filter(id => !journey.claimed.includes(id));
+          if (missing.length) return failure('Dieser Auftrag ist noch gesperrt. Hole zuerst die Belohnung für ' + missing.map(id => '„' + QUESTS.find(entry => entry.id === id).title + '“').join(' und ') + ' ab.');
+          state.journey = journey; journey.accepted.push(quest.id);
+          record('quest', 'Auftrag angenommen: ' + quest.title + '.');
+          return done('Auftrag angenommen: ' + quest.title + '. ' + quest.hint);
+        }
+        if (journey.claimed.includes(quest.id)) return failure('Die Belohnung wurde bereits abgeholt. Das Dossier bleibt im Kodex.');
+        if (!journey.accepted.includes(quest.id)) return failure('Nimm den Auftrag zuerst mit quest ' + quest.id + ' an.');
+        if (!journey.ready.includes(quest.id)) return failure('Der Auftrag ist noch nicht erfüllt. ' + quest.hint);
+        journey.claimed.push(quest.id);
+        record('claim', 'Belohnung erhalten: ' + quest.reward + '.');
+        return done('Belohnung erhalten: ' + quest.reward + '.\n' + quest.text);
+      }
+      if (type === 'inspect') {
+        const scene = SCENES.find(entry => entry.id === payload.id);
+        if (!scene) return failure('Dieser Ort existiert nicht. Untersuche chamber, eclipse, ice-ring, nodes, terminal oder void.');
+        const fresh = !journey.inspected.includes(scene.id);
+        const corona = scene.id === 'eclipse' && state.phase === 2 && !journey.coronaInspected;
+        state.journey = journey;
+        if (fresh) journey.inspected.push(scene.id);
+        if (corona) journey.coronaInspected = true;
+        if (fresh || corona) record('inspect', scene.name + ' untersucht · Phase ' + profile().name + '.');
+        const found = [];
+        if (scene.id === 'void' && state.paused) {
+          const secret = discoverSecret(journey, 'silence'); if (secret) found.push(secret);
+        }
+        if (scene.id === 'ice-ring' && state.phase === 3 && journey.inspected.includes('eclipse')) {
+          const secret = discoverSecret(journey, 'refraction'); if (secret) found.push(secret);
+        }
+        return done(scene.name.toUpperCase() + ' / ' + profile().name + '\n' + scene.text +
+          (found.length ? '\n\n' + found.map(secret => 'GEHEIMNIS ENTDECKT: ' + secret.title + '\n' + secret.text).join('\n\n') : ''));
+      }
+      if (type === 'signal') {
+        if (typeof payload.code !== 'string' || payload.code !== '004-46-13091') return { ok: false, reason: 'code', message: 'Keine Antwort auf dieser Frequenz. Lies die Inschriften der Kammer, der Finsternis und des Nexus. Drei Zahlen, zwei Bindestriche.' };
+        if (!['chamber', 'eclipse', 'ice-ring'].every(id => journey.inspected.includes(id))) return { ok: false, reason: 'clues', message: 'Die Frequenz ist noch nicht belegt. Untersuche zuerst Kammer, Finsternis und Nexus, um alle Hinweise zu sammeln.' };
+        if (journey.secrets.includes('frequency')) return { ok: false, reason: 'discovered', message: 'Diese Empfangslinie wurde bereits geöffnet. Ihre Nachricht bleibt im Kodex.' };
+        state.journey = journey;
+        const secret = discoverSecret(journey, 'frequency');
+        return done('GEHEIMNIS ENTDECKT: ' + secret.title + '\n' + secret.text);
+      }
+      if (type === 'echo') {
+        const id = payload.word === '42' ? 'answer' : payload.word === 'xyzzy' ? 'magic' : null;
+        if (!id) return failure('Das Echo verliert sich im Eis. Vielleicht helfen die Randnotizen im Vault.');
+        if (journey.eggs.includes(id)) return failure('Dieses Echo wurde bereits gefunden. Es bleibt im Kodex.');
+        state.journey = journey; journey.eggs.push(id);
+        const egg = EGGS.find(entry => entry.id === id);
+        record('echo', 'Echo entdeckt: ' + egg.title + '.');
+        return done('ECHO ENTDECKT: ' + egg.title + '\n' + egg.text);
+      }
+      if (type === 'theme') {
+        const theme = THEMES.find(entry => entry.id === payload.id);
+        if (!theme) return failure('Diese Signatur existiert nicht. Verfügbar sind frost, aurora und ember.');
+        if (!themeUnlocked(journey, theme.id)) return failure('Diese Signatur wurde noch nicht entdeckt. Das Journal zeigt ihre Freischaltung.');
+        if (journey.theme === theme.id) return failure('Die Signatur „' + theme.name + '“ ist bereits aktiv.');
+        state.journey = journey; journey.theme = theme.id;
+        record('theme', 'Signatur gewählt: ' + theme.name + '.');
+        return done('Signatur „' + theme.name + '“ aktiv. Deine Werte und Handelsbedingungen bleiben gleich.');
+      }
+      return failure('Unbekannter Journalvorgang.');
+    }
 
     function quote(type, id, quantity) {
       const empty = { quantity: 0, price: 0, gross: 0, fee: 0, slippage: 0, total: 0, net: 0 };
@@ -268,6 +449,10 @@
       if (derived().equity > MONEY_LIMIT) { state = checkpoint; return failure('Der Simulationsschritt würde die Vermögensgrenze überschreiten.'); }
       const interest = vault.open ? money(state.vault.balance * vault.apr / 100 * 5 / YEAR_MINUTES) : 0;
       const credited = money(Math.max(0, Math.min(interest, MONEY_LIMIT - derived().equity)));
+      if (state.vault.balance >= 1000 && credited > 0) {
+        if (!state.journey) state.journey = journeyInitial();
+        state.journey.vaultYield = true;
+      }
       state.vault.balance = money(state.vault.balance + credited);
       state.vault.earned = money(Math.min(MONEY_LIMIT, state.vault.earned + credited));
       const message = 'Simulationszeit +' + 5 + ' min · Phase ' + current.name + (credited ? ' · Vault-Zuwachs ' + display(credited) + ' CNX.' : '.');
@@ -300,6 +485,7 @@
 
     function act(type, payload) {
       payload = payload || {};
+      if (['quest', 'claim', 'inspect', 'signal', 'echo', 'theme'].includes(type)) return journeyAction(type, payload);
       if (['observe', 'calibrate', 'decode'].includes(type)) {
         if (!derived().vault.cryoUnlocked) return failure('Die Fähigkeit benötigt aktiven CRYO-Zugang. Nutze unlock cryo bis 31.10.2026 UTC.');
         const research = state.expedition || expeditionInitial();
@@ -379,6 +565,10 @@
         state.cash = money(state.cash - 700);
         node.strength = money(Math.min(100, node.strength + 8));
         state.coherence = money(Math.min(100, state.coherence + 7));
+        if (node.bound && node.strength >= 90) {
+          if (!state.journey) state.journey = journeyInitial();
+          if (!state.journey.stabilized.includes(node.id)) state.journey.stabilized.push(node.id);
+        }
         const message = payload.id + ' stabilisiert · Kosten 700 CNX · Stärke bis +8, Kohärenz bis +7.';
         record(type, message); return done(message);
       }

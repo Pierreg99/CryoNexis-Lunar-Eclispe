@@ -10,6 +10,14 @@
   const precise = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 6 });
   const interest = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
   const commands = Object.freeze({
+    quests: [0, 0, 'quests', 'quests', 'Öffnet den Auftragsstand mit Fortschritt, Belohnungen und nächsten Schritten. Aufträge bleiben unabhängig vom CRYO-Zugang spielbar.'],
+    quest: [1, 1, 'quest ID', 'quest arrival', 'Nimmt einen freigeschalteten Auftrag an. quests zeigt die gültigen IDs.'],
+    claim: [1, 1, 'claim ID', 'claim arrival', 'Nimmt eine einmalige Journal-Belohnung entgegen, sobald der Auftrag bereit ist.'],
+    inspect: [0, 1, 'inspect [Szene]', 'inspect nexus', 'Prüft das Signal einer Szene. Ohne Argument wird die aktuelle Ansicht verwendet. Szenen: kammer, finsternis, nexus, knoten, vault, nebel.'],
+    secrets: [0, 0, 'secrets', 'secrets', 'Zeigt entdeckte Geheimnisse und behutsame Hinweise auf ungelöste Übertragungen.'],
+    signal: [1, 1, 'signal Code', 'signal Kennung-Schollen-Index', 'Rekonstruiert eine Frequenz aus den Szenensignalen. Falsche Versuche verbrauchen weder CNX noch Kohärenz.'],
+    echo: [1, 1, 'echo Wort', 'echo 42', 'Schickt ein einzelnes Wort in die Dunkelheit. Manche alten Antworten warten auf die richtige Frage.'],
+    theme: [0, 1, 'theme [Signatur]', 'theme frost', 'Zeigt oder wählt eine freigeschaltete Lichtsignatur. Signaturen verändern die Oberfläche und bleiben lokal gespeichert.'],
     cryo: [1, 1, 'cryo unlock', 'cryo unlock', 'Alternative Schreibweise für unlock cryo. Lädt die Forschungsfähigkeiten bei aktivem Zugang.'],
     missions: [0, 0, 'missions', 'missions', 'Zeigt Forschungsfortschritt, Fähigkeiten und die nächsten Freischaltungen.'],
     observe: [0, 0, 'observe', 'observe', 'Erfasst die aktuelle Finsternisphase im Observatorium. Jede Phase kann einmal erfasst werden.'],
@@ -118,7 +126,33 @@
     let result;
     switch (command) {
       case 'help':
-        appendTerminal(parts[1] ? help(parts[1].toLowerCase()) : 'unlock cryo / cryo unlock → Forschungsfähigkeiten laden\nmissions / observe / calibrate ID / decode → Projektsphäre erschließen\nhelp BEFEHL → Erklärung und Beispiel\ntasks → Aufgabenstand und nächste Schritte\nhelp / status / nodes / phase / eclipse / vault / clear\nportfolio → Guthaben, Positionen, Gebühren\nhistory → Deine Zeitspuren\nphase 1..5 → Phase wählen (kostet Kohärenz)\nbuy ID Menge / sell ID Menge → Handeln\nlink ID / unlink ID → Zeitbindung (1.200 / +400 CNX)\nstabilize ID → Knoten stärken (700 CNX)\ndeposit Betrag / withdraw Betrag → Vault\npause / resume / step → Simulationszeit steuern\nreset confirm → Lokalen Fortschritt löschen\nBeispiel: buy CN-ALPHA-01 2,5\nAlle Werte sind fiktiv, lokal und deterministisch.');
+        appendTerminal(parts[1] ? help(parts[1].toLowerCase()) : 'quests / quest ID / claim ID → Aufträge und Belohnungen\ninspect Szene / secrets / signal Code / echo Wort → Verborgene Übertragungen\ntheme Signatur → Lichtsignatur wählen\nunlock cryo / cryo unlock → Forschungsfähigkeiten laden\nmissions / observe / calibrate ID / decode → Projektsphäre erschließen\nhelp BEFEHL → Erklärung und Beispiel\ntasks → Aufgabenstand und nächste Schritte\nhelp / status / nodes / phase / eclipse / vault / clear\nportfolio → Guthaben, Positionen, Gebühren\nhistory → Deine Zeitspuren\nphase 1..5 → Phase wählen (kostet Kohärenz)\nbuy ID Menge / sell ID Menge → Handeln\nlink ID / unlink ID → Zeitbindung (1.200 / +400 CNX)\nstabilize ID → Knoten stärken (700 CNX)\ndeposit Betrag / withdraw Betrag → Vault\npause / resume / step → Simulationszeit steuern\nreset confirm → Lokalen Fortschritt löschen\nBeispiel: buy CN-ALPHA-01 2,5\nAlle Werte sind fiktiv, lokal und deterministisch.');
+        break;
+      case 'quests': {
+        const journal = state.journey;
+        appendTerminal('ENTDECKERJOURNAL / ' + journal.claimedCount + ' von ' + journal.quests.length + ' Aufträgen abgeschlossen\n' + journal.quests.map(function (entry) {
+          return entry.id + ' / ' + entry.title + ' / ' + entry.status.toUpperCase() + ' / ' + entry.progress.value + '/' + entry.progress.max +
+            '\n' + entry.description + '\nNächster Schritt: ' + (entry.status === 'available' ? 'quest ' + entry.id : entry.status === 'ready' ? 'claim ' + entry.id : entry.hint) + '\nBelohnung: ' + entry.reward;
+        }).join('\n\n') + '\nBelohnungen sind Geschichten und Signaturen; alle Fortschritte bleiben auf diesem Gerät.');
+        break;
+      }
+      case 'secrets':
+        appendTerminal('VERBORGENE ÜBERTRAGUNGEN / ' + state.journey.secretCount + '/' + state.journey.secrets.length + '\n' + state.journey.secrets.map(function (entry, index) {
+          return entry.discovered ? '✓ ' + entry.title + '\n' + entry.text : '○ Unbekanntes Signal ' + (index + 1) + '\nHinweis: ' + entry.hint;
+        }).join('\n\n') + '\nIm Archiv liegen ' + state.journey.eggs.filter(function (entry) { return entry.discovered; }).length + ' ungewöhnliche Echos.');
+        break;
+      case 'quest': case 'claim': result = action(command, { id: (parts[1] || '').toLowerCase() }); break;
+      case 'inspect': {
+        const aliases = { kammer: 'chamber', chamber: 'chamber', finsternis: 'eclipse', eclipse: 'eclipse', nexus: 'ice-ring', 'ice-ring': 'ice-ring', knoten: 'nodes', nodes: 'nodes', vault: 'terminal', terminal: 'terminal', nebel: 'void', void: 'void' };
+        const scene = (parts[1] || api.currentSection || 'chamber').toLowerCase();
+        result = Object.prototype.hasOwnProperty.call(aliases, scene) ? action('inspect', { id: aliases[scene] }) : { ok: false, message: 'Unbekanntes Signal. Verwende kammer, finsternis, nexus, knoten, vault oder nebel.' };
+        break;
+      }
+      case 'signal': result = action('signal', { code: parts[1] }); break;
+      case 'echo': result = action('echo', { word: parts[1] }); break;
+      case 'theme':
+        if (parts[1]) result = action('theme', { id: parts[1].toLowerCase() });
+        else appendTerminal('LICHTSIGNATUREN / Aktiv: ' + state.journey.theme + '\n' + state.journey.themes.map(function (entry) { return (entry.unlocked ? '✓ ' : '○ ') + entry.id + ' / ' + entry.name + (entry.unlocked ? ' · theme ' + entry.id : ' · durch Entdeckungen freischalten'); }).join('\n') + '\nEine Signatur färbt die Oberfläche; Handel und Spielregeln bleiben gleich.');
         break;
       case 'missions': {
         const research = state.expedition;

@@ -8,6 +8,8 @@ Der dokumentierte vollständige Lauf vom **10. Oktober 2026** bestand zehn Model
 
 Die Terminal-Erweiterung vom 11. Oktober ergänzt einschließlich CRYO-Freischaltung fünf reine Terminal-Testgruppen und gezielte Browserprüfungen. Die vorherige Vollprüfung der Engine wird dadurch nicht als neu ausgeführter Hardwaretest ausgegeben.
 
+Die Journal-Erweiterung ergänzt zehn reine Modell-/Terminal-Testgruppen und zwei Browser-Spielwege. `npm run test:journey` prüft Questnachweise, versteckte Übertragungen, einmalige Belohnungen, alte und neue Speicherstände, unveränderte Markt-Zufallsfolge sowie Desktop- und Mobilbedienung.
+
 ## Ausführen
 
 ```sh

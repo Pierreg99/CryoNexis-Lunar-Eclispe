@@ -1,5 +1,19 @@
 # Prüfung · CRYONEXUS
 
+## Entdeckerjournal · 14. Oktober 2026
+
+Aktueller Umfang: **15 lokale Laufzeitdateien mit 845.804 Bytes**, davon **149.898 Bytes Start-JavaScript**. Das Journal ergänzt sechs Story-Aufträge, drei Geheimnisse, zwei Terminal-Echos, verdiente Dossiers und Titel sowie die freischaltbaren Signaturen Glut und Aurora. Alle Inhalte bleiben unabhängig vom CRYO-Ablauf spielbar. Die erweiterte Version-1-Speicherung akzeptiert weiterhin alte Spielstände.
+
+**28 reine Testgruppen** bestanden: zehn Modell-, fünf Terminal-, drei Forschungs- und zehn neue Journal-Gruppen. Die Journal-Prüfungen nutzen echte Spielaktionen nach dem CRYO-Ablauf, verlangen einen gemeinsamen Nachweis aus mindestens 1.000 CNX und tatsächlich gutgeschriebenem Ertrag, berücksichtigen neue Beacon-Arbeit vor dem Journal-Einstieg und erfinden keine Belege in importierten Altständen. Falsche Codes und wiederholte Belohnungen bleiben atomar; Geschichten und Signaturen verändern weder Markt-RNG noch die Handelsabrechnung.
+
+**Vier Browser-Spielwege** bestanden: zwei neue Journal-Abläufe und die zwei bisherigen Bedienungsprüfungen. Geprüft wurden komplette Quest-/Geheimniswege, gespeicherte Themen und Dossiers, Neustart ohne alte Belege, lokales Feedback, erhaltene Eingaben und Fokus während Markttakten, dynamische nächste Szenenziele, Journal-Zeitpause, Phasenwahl, Touch-Ziele, mobile Lesbarkeit und kein horizontaler Überlauf. Reduzierte Bewegung erforderte keine Grafikdownloads. Desktop, Mobilgerät und 320 px Breite wurden zusätzlich visuell beziehungsweise auf Überlauf geprüft.
+
+**Elf HTTP-Akzeptanzszenarien über acht Suites** bestanden: `desktop,mobile,reduced,simulation,startup,terminal,zen,capabilities`. Diese Auswahl deckt die neuen Modul- und Bedienverträge sowie die vorhandenen Szenen, Abrechnungen, Speicherung, verzögerte Grafik, Show und Forschung ab. Die Engine und ihre Shader wurden nicht geändert. Alle sechs kritischen Skripte bleiben verzögert geladen und ihre Inhaltsversionen stimmen; CSS besitzt 23 nummerierte Blöcke.
+
+Ein kombinierter gezielter `npm test`-Aufruf erreichte unter SwiftShader die bestehende 10-Sekunden-Wartegrenze für automatische Preisänderungen am Desktop. Derselbe Desktoplauf bestand isoliert mit unveränderter Bedingung; die übrigen sieben Suites bestanden anschließend zusammen. **Der kombinierte Aufruf selbst ist damit nicht als bestanden ausgewiesen.** Kein Timeout und keine Assertion wurden gelockert. Zwei Datei-URL-Szenarien bleiben durch die verwaltete Chromium-Richtlinie blockiert.
+
+Die vollständige lokale Abdeckung liegt in `tests/artifacts/quests-acceptance-report.json`; `combinedTargetedNpmInvocationPassed: false`, der ursprüngliche Timeout und die erfolgreichen Nachprüfungen bleiben dokumentiert. Rohberichte und Screenshots sind lokale, ignorierte Artefakte. Die Prüfung verwendet Chromium 154.0.8037.57 und stellt keinen neuen Hardware-FPS- oder Gesamt-VRAM-Nachweis dar.
+
 ## Bedienung und Gestaltung · 14. Oktober 2026
 
 Aktueller Umfang: **14 Laufzeitdateien mit 793.512 Bytes**, davon **110.251 Bytes Start-JavaScript**. Direkte Einstiege, aktive Navigation, ein zustandsabhängiger Vault-Leitfaden, lokale Aktionsbelege, Eingabevalidierung und bewusst aktivierter Klang wurden ergänzt. Mobile Felder verwenden 16 px Schrift; Bedienbuttons haben mindestens 44 px Höhe. Der Lieferumfang bleibt unter 1,2 MB; Inhaltsversionen für CSS und App wurden erneuert.

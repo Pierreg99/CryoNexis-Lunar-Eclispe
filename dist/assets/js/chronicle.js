@@ -229,12 +229,14 @@
     const previousId = previousHistory.length ? previousHistory[previousHistory.length - 1].id : 0;
     const nextId = nextHistory.length ? nextHistory[nextHistory.length - 1].id : 0;
     if (current && (state.tick < current.tick || nextId < previousId)) {
-      document.querySelectorAll('.scene-discovery[data-discovery], #signal-feedback, #journal-message').forEach(function (node) {
+      document.querySelectorAll('.scene-discovery[data-discovery], #signal-feedback, #echo-feedback, #journal-message').forEach(function (node) {
         text(node, '');
         delete node.dataset.error;
       });
       const input = document.getElementById('signal-code');
       if (input) input.setAttribute('aria-invalid', 'false');
+      const echoInput = document.getElementById('echo-word');
+      if (echoInput) echoInput.setAttribute('aria-invalid', 'false');
     }
     current = state;
     const record = journey(state);
@@ -285,6 +287,17 @@
           input.setAttribute('aria-invalid', String(!!result && !result.ok && (!result.reason || result.reason === 'code')));
         });
         input.addEventListener('input', function () { input.setAttribute('aria-invalid', 'false'); });
+      }
+      const echoForm = document.getElementById('echo-form');
+      const echoInput = document.getElementById('echo-word');
+      const echoFeedback = document.getElementById('echo-feedback');
+      if (echoForm && echoInput) {
+        echoForm.addEventListener('submit', function (event) {
+          event.preventDefault();
+          const result = act('echo', { word: echoInput.value.trim() }, echoFeedback);
+          echoInput.setAttribute('aria-invalid', String(!!result && !result.ok && result.reason === 'word'));
+        });
+        echoInput.addEventListener('input', function () { echoInput.setAttribute('aria-invalid', 'false'); });
       }
       document.querySelectorAll('.scene-inspect[data-inspect]').forEach(function (button) {
         button.addEventListener('click', function () {

@@ -4,9 +4,10 @@
   "private": true,
   "description": "Offline procedural WebGL experience; tooling is development-only.",
   "scripts": {
-    "test": "node tests/simulation.cjs && node tests/terminal.cjs && node tests/research.cjs && node tests/journey.cjs && node tests/journey-browser.cjs && node tests/usability.cjs && node tests/acceptance.cjs",
+    "test": "node tests/simulation.cjs && node tests/terminal.cjs && node tests/research.cjs && node tests/journey.cjs && node tests/original-secrets.cjs && node tests/journey-browser.cjs && node tests/original-secrets-browser.cjs && node tests/usability.cjs && node tests/acceptance.cjs",
     "test:simulation": "node tests/simulation.cjs",
-    "test:journey": "node tests/journey.cjs && node tests/journey-browser.cjs"
+    "test:journey": "node tests/journey.cjs && node tests/journey-browser.cjs",
+    "test:secrets": "node tests/original-secrets.cjs && node tests/original-secrets-browser.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

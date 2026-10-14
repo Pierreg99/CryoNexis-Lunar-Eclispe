@@ -151,11 +151,13 @@
         vaultFeedback.textContent = ''; delete vaultFeedback.dataset.error; delete vaultFeedback.dataset.validation;
       }
       validateVaultAmount();
-      document.querySelectorAll('.scene-discovery, #signal-feedback, #journal-message').forEach(function (element) {
+      document.querySelectorAll('.scene-discovery, #signal-feedback, #echo-feedback, #journal-message').forEach(function (element) {
         element.textContent = ''; delete element.dataset.error;
       });
       const signalCode = document.getElementById('signal-code');
       if (signalCode) signalCode.setAttribute('aria-invalid', 'false');
+      const echoWord = document.getElementById('echo-word');
+      if (echoWord) echoWord.setAttribute('aria-invalid', 'false');
     }
     return result;
   }

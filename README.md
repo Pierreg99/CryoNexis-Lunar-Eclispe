@@ -10,7 +10,7 @@ Eine deutschsprachige, prozedurale 3D-Erfahrung zwischen Eis, Finsternis und Sch
 
 | Erlebnis | Architektur | Auslieferung | Prüfung |
 | --- | --- | --- | --- |
-| 6 prozedurale Szenen | 4 getrennte Schichten | 782.279 Bytes in `dist/` | 10 Modell-, 5 Terminal- und 3 Forschungs-Testgruppen; gezielte Browserprüfungen bestanden |
+| 6 prozedurale Szenen | 4 getrennte Schichten | 793.512 Bytes in `dist/` | 10 Modell-, 5 Terminal- und 3 Forschungs-Testgruppen; Bedienung und Browser-Verhalten geprüft |
 
 ## In einer Minute starten
 
@@ -48,7 +48,9 @@ Das Terminal liefert konkrete Ergebnisbelege mit Gebühren, Geldfluss und Bestä
 | --- | --- | --- |
 | 130 Kristalle, sechs Knoten und echte Spielentscheidungen | Terminal, Datensäulen und bedingter Zugang | Nebel, Staub und steuerbare Zeitlinie |
 
-Bloom, ACES, Filmkorn, Scanlines, Vignette und chromatische Aberration verbinden die Szenen. Klang entsteht nach einer Benutzeraktion lokal. „Bewegung reduzieren“ stoppt automatische Animationen und Simulationszeit; Handel, Terminal und manuelle Schritte bleiben nutzbar.
+Bloom, ACES, Filmkorn, Scanlines, Vignette und chromatische Aberration verbinden die Szenen. Klang entsteht lokal und startet erst über den Klang-Button. „Bewegung reduzieren“ stoppt automatische Animationen und Simulationszeit; Handel, Terminal und manuelle Schritte bleiben nutzbar.
+
+„Welt erkunden“ und „Zur Simulation“ bieten zwei direkte Einstiege. Die Navigation markiert die aktuelle Sektion. Im Schattenmarkt führt „Dein erster Vault“ anhand deines Fortschritts zur nächsten Aktion; Knotendetails, verständliche Quotes und dauerhafte Aktionsbelege helfen beim Handel. Mobile Eingaben bleiben gut lesbar.
 
 ## Vier Schichten, klare Zuständigkeiten
 
@@ -61,7 +63,7 @@ flowchart LR
     S -->|vorhandene Geometrie| E
 ```
 
-Die Oberfläche enthält keine 3D-Geometrie. Das Modell kennt weder DOM noch Speicher. Die Engine besitzt höchstens zwei WebGL-Kontexte und rendert ausschließlich sichtbare Szenen. GPU-Daten ausgeblendeter Szenen und große Puffer freier Slots werden freigegeben; CPU-Szenen bleiben gecacht. Viertelauflösender Bloom verwendet zwei permanente Targets ohne Allokationen pro Frame. Die Oberfläche startet mit 104.259 Bytes JavaScript; Three.js und Szenen (633.171 Bytes) laden nach dem ersten UI-Paint nach. Die frühere künstliche 2,4-Sekunden-Boot-Sequenz entfällt. Bei reduzierter Bewegung werden die Grafikskripte erst nach Aktivierung der Bewegung geladen. Alle Skripte laden klassisch und lokal, ohne Bundler oder ES-Modulimporte.
+Die Oberfläche enthält keine 3D-Geometrie. Das Modell kennt weder DOM noch Speicher. Die Engine besitzt höchstens zwei WebGL-Kontexte und rendert ausschließlich sichtbare Szenen. GPU-Daten ausgeblendeter Szenen und große Puffer freier Slots werden freigegeben; CPU-Szenen bleiben gecacht. Viertelauflösender Bloom verwendet zwei permanente Targets ohne Allokationen pro Frame. Die Oberfläche startet mit 110.251 Bytes JavaScript; Three.js und Szenen (633.171 Bytes) laden nach dem ersten UI-Paint nach. Die frühere künstliche 2,4-Sekunden-Boot-Sequenz entfällt. Bei reduzierter Bewegung werden die Grafikskripte erst nach Aktivierung der Bewegung geladen. Alle Skripte laden klassisch und lokal, ohne Bundler oder ES-Modulimporte.
 
 **[Modulverträge →](docs/wiki/Architektur.md) · [Szenen und Shader →](docs/wiki/Szenen.md) · [Farben und Gestaltung →](docs/wiki/Designsystem.md)**
 

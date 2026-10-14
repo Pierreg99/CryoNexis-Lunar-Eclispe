@@ -2,11 +2,15 @@
 
 **[Handbuch](Home.md) / Interaktion**
 
+## Einstieg und Orientierung
+
+„Welt erkunden“ führt durch die Szenen; „Zur Simulation“ öffnet den Schattenmarkt. Die Navigation verbindet alle sechs Sektionen und markiert deine aktuelle Ansicht. Der Leitfaden „Dein erster Vault“ zeigt anhand deines Netzwerks den nächsten Schritt: Knoten binden, Stabilität oder Kohärenz erhöhen, ein passendes Zeitfenster wählen und den Vault öffnen.
+
 ## Knoten und Handel
 
 Die sechs Knoten öffnen sich per Klick, Enter oder Leertaste. Jeder zeigt Preis, Liquidität, Stärke, Spread, simuliertes Risiko, Validatoren, Halbwertszeit und deinen Bestand.
 
-Gib eine positive Anzahl von Anteilen ein. Dezimalkomma und Dezimalpunkt sind erlaubt; verwende keine Tausendertrennzeichen. Vor dem Kauf zeigt die Quote den vollständigen Betrag einschließlich Gebühr und Slippage. Beim Verkauf zeigt sie den tatsächlich gutgeschriebenen Erlös. Fehlendes Guthaben oder zu geringer Bestand sperren den jeweiligen Button.
+Gib eine positive Anzahl von Anteilen ein. Dezimalkomma und Dezimalpunkt sind erlaubt; verwende keine Tausendertrennzeichen. Vor dem Kauf zeigt die Quote den vollständigen Betrag einschließlich Gebühr und Slippage. Beim Verkauf zeigt sie den tatsächlich gutgeschriebenen Erlös. Fehlendes Guthaben oder zu geringer Bestand sperren den jeweiligen Button; die Quote erklärt den Grund. Ungültige Mengen werden am Eingabefeld markiert. Belege und Fehler erscheinen direkt an der Knotenaktion und bleiben bei Markttakten erhalten.
 
 | Aktion | Bedeutung |
 | --- | --- |
@@ -29,7 +33,7 @@ Pause hält die berechnete Zeit an; die dekorativen Szenen können weiter animie
 
 ## Vault
 
-Die Bedingungen stehen direkt am Vault. Einlagern und Entnehmen sind nur im offenen Fenster möglich. Wenn eine Bedingung wegfällt, bleiben Guthaben und bereits gebuchte Zinsen erhalten. Während des geschlossenen Fensters entstehen keine neuen Zinsen. Verbessere das Netzwerk oder wähle ein geeignetes Zeitfenster, um wieder zu entnehmen.
+Die Bedingungen stehen direkt am Vault. Betragseingaben erlauben Komma oder Punkt und höchstens vier Nachkommastellen. Einlagen und Entnahmen erhalten einen eigenen Beleg, der bei Markttakten sichtbar bleibt. Einlagern und Entnehmen sind nur im offenen Fenster möglich. Wenn eine Bedingung wegfällt, bleiben Guthaben und bereits gebuchte Zinsen erhalten. Während des geschlossenen Fensters entstehen keine neuen Zinsen. Verbessere das Netzwerk oder wähle ein geeignetes Zeitfenster, um wieder zu entnehmen.
 
 Die Phase **Reset** schließt den Vault, löscht aber keine Käufe oder Einlagen. Sie ist unabhängig vom **Neustart** der gesamten Simulation.
 
@@ -45,6 +49,6 @@ Neuladen stellt Zustand und Zufallsfolge wieder her. Beschädigte Zustände werd
 
 Tab bewegt zwischen den Bedienelementen; geschlossene Knotenfelder sind sofort `inert` und nicht fokussierbar. Enter/Leertaste öffnen Knotendetails. Im Terminal blättern Pfeil hoch und runter durch die Eingabehistorie.
 
-Klang beginnt erst nach einer Pointer-Aktion oder dem Klang-Button. Der Drone entsteht im Browser; es wird kein Mikrofon angefordert. „Bewegung reduzieren“ stoppt Canvas, Animationsframes, CSS-Animationen und automatische Simulationszeit. Inhalte, Terminal, Handel und manuelle Schritte bleiben verfügbar.
+Klang beginnt erst nach Aktivierung des Klang-Buttons und lässt sich dort wieder ausschalten. Der Drone entsteht im Browser; es wird kein Mikrofon angefordert. „Bewegung reduzieren“ stoppt Canvas, Animationsframes, CSS-Animationen und automatische Simulationszeit. Inhalte, Terminal, Handel und manuelle Schritte bleiben verfügbar.
 
 **Weiter:** [Terminal](Terminal.md) · [Simulation](Simulation.md) · [FAQ](FAQ.md)

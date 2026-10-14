@@ -312,7 +312,7 @@ async function keyboard(page) {
     'nav a,.node-trigger,#terminal-input,#audio-toggle,[data-phase]')).map(element => ({
       tag: element.tagName, disabled: element.disabled, tabIndex: element.tabIndex,
     })));
-  assert.equal(targets.length, 17);
+  assert.equal(targets.length, 19);
   assert(targets.every(target => !target.disabled && target.tabIndex >= 0), 'Every required control must be keyboard reachable');
   await page.locator('.node-trigger').first().focus();
   await page.keyboard.press('Enter');
@@ -327,7 +327,7 @@ async function keyboard(page) {
   await page.keyboard.press('Tab');
   assert.equal(await page.evaluate(() => document.activeElement === document.querySelectorAll('.node-trigger')[1]), true,
     'Tab did not move to the next node control');
-  await page.locator('nav a').first().focus();
+  await page.locator('nav a[href="#eclipse"]').focus();
   await page.keyboard.press('Enter');
   await page.waitForTimeout(900);
   assert.equal(await page.evaluate(() => location.hash), '#eclipse');
@@ -358,7 +358,17 @@ async function fullRun(browser, url, name, viewport) {
   const visits = [];
   for (const id of sectionIds) {
     await scrollTo(page, id);
-    visits.push(await assertVisibility(page));
+    try { visits.push(await assertVisibility(page)); }
+    catch (error) {
+      const diagnostic = await page.evaluate(section => ({
+        section, scrollY, viewport: innerHeight, hidden: document.hidden, stats: cinema.getStats(),
+        bounds: Array.from(document.querySelectorAll('main > section')).map(element => {
+          const rect = element.getBoundingClientRect();
+          return { id: element.id, top: rect.top, bottom: rect.bottom };
+        })
+      }), id);
+      throw new Error(`${error.message}\nVisibility diagnostics: ${JSON.stringify(diagnostic)}`);
+    }
     try {
       await page.waitForFunction(section => {
         const element = document.querySelector(`#${section} .reveal`);
@@ -433,8 +443,10 @@ async function fullRun(browser, url, name, viewport) {
     throw new Error(`${error.message}\nPhase diagnostics: ${JSON.stringify(state)}`);
   }
   assert.equal(await page.locator('[data-phase][aria-pressed="true"]').count(), 1);
-  // An earlier node pointer gesture can activate the drone; explicit toggle still must work both ways.
-  if (await page.locator('#audio-toggle').getAttribute('aria-pressed') === 'true') await page.locator('#audio-toggle').click();
+  assert.equal(await page.locator('#audio-toggle').getAttribute('aria-pressed'), 'false',
+    'Navigation and node interactions must leave sound off until explicitly enabled');
+  assert.equal(await page.evaluate(() => __acceptance.audioContexts.length), 0,
+    'General interactions must not initialize audio');
   await page.locator('#audio-toggle').click();
   await page.waitForFunction(() => document.querySelector('#audio-toggle').getAttribute('aria-pressed') === 'true',
     null, { polling: 50 });
@@ -585,12 +597,24 @@ async function contextRecovery(browser, url) {
   await commands(page);
   const lostFrames = await page.evaluate(() => Object.fromEntries(cinema.getStats().scenes.map(scene => [scene.id, scene.frames])));
   await page.evaluate(() => __acceptance.lossExtensions[0].restoreContext());
-  await page.waitForFunction(before => {
-    const stats = cinema.getStats(), active = stats.scenes.find(scene => scene.running);
-    if (__acceptance.contextEvents.restored !== 1 || stats.running !== 1 || !active || active.frames <= (before[active.id] || 0)) return false;
-    const rect = document.getElementById(active.id).closest('section').getBoundingClientRect();
-    return rect.bottom > 0 && rect.top < innerHeight;
-  }, lostFrames, { timeout: 10_000, polling: 100 });
+  try {
+    await page.waitForFunction(before => {
+      const stats = cinema.getStats(), active = stats.scenes.find(scene => scene.running);
+      if (__acceptance.contextEvents.restored !== 1 || stats.running !== 1 || !active || active.frames <= (before[active.id] || 0)) return false;
+      const rect = document.getElementById(active.id).closest('section').getBoundingClientRect();
+      return rect.bottom > 0 && rect.top < innerHeight;
+    }, lostFrames, { timeout: 10_000, polling: 100 });
+  } catch (error) {
+    const diagnostic = await page.evaluate(before => ({
+      before, scrollY, viewport: innerHeight, hidden: document.hidden, focus: document.activeElement.id,
+      events: __acceptance.contextEvents, lost: __acceptance.contexts.map(context => context.isContextLost()),
+      stats: cinema.getStats(), bounds: Array.from(document.querySelectorAll('main > section')).map(element => {
+        const rect = element.getBoundingClientRect();
+        return { id: element.id, top: rect.top, bottom: rect.bottom };
+      })
+    }), lostFrames);
+    throw new Error(`${error.message}; first-slot recovery: ${JSON.stringify(diagnostic)}; faults: ${JSON.stringify(run.faults)}`);
+  }
   await clean(run);
   const restored = await page.evaluate(() => ({
     lost: __acceptance.contexts.map(context => context.isContextLost()), stats: cinema.getStats(),

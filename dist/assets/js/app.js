@@ -14,6 +14,7 @@
   const counters = new Map();
   const pendingTilts = new Map();
   const sections = Array.from(document.querySelectorAll('.section'));
+  const navigationLinks = Array.from(document.querySelectorAll('nav a[href^="#"]'));
   const phaseButtons = Array.from(document.querySelectorAll('[data-phase]'));
   const clock = document.getElementById('clock');
   const fps = document.getElementById('fps');
@@ -123,21 +124,45 @@
     const value = String(raw).trim().replace(',', '.');
     return /^\d+(?:\.\d+)?$/.test(value) ? Number(value) : NaN;
   }
-  function announce(result) {
+  function validInput(value, minimum, maximum, decimals) {
+    const scale = Math.pow(10, decimals);
+    return Number.isFinite(value) && value >= minimum && value <= maximum &&
+      Math.abs(value - Math.round(value * scale) / scale) <= Number.EPSILON * Math.max(1, Math.abs(value)) * 2;
+  }
+  function announce(result, feedback, live) {
     const element = document.getElementById('simulation-message');
-    if (element) { element.textContent = result.message; element.dataset.error = String(!result.ok); }
+    if (element) {
+      element.setAttribute('aria-live', feedback || live === false ? 'off' : 'polite');
+      element.textContent = result.message; element.dataset.error = String(!result.ok);
+    }
+    if (feedback) { feedback.textContent = result.message; feedback.dataset.error = String(!result.ok); }
     // Manual changes remain animation-free when accessibility preferences require it.
     if (motion.matches && typeof document.getAnimations === 'function') {
       document.getAnimations().forEach(function (animation) { animation.cancel(); });
     }
     return result;
   }
-  function action(type, payload) { return announce(simulation.act(type, payload)); }
+  function action(type, payload, feedback, live) {
+    const result = announce(simulation.act(type, payload), feedback, live);
+    if (type === 'reset' && result.ok) {
+      nodeViews.forEach(function (view) { view.feedback.textContent = ''; delete view.feedback.dataset.error; });
+      const vaultFeedback = document.getElementById('vault-feedback');
+      if (vaultFeedback) {
+        vaultFeedback.textContent = ''; delete vaultFeedback.dataset.error; delete vaultFeedback.dataset.validation;
+      }
+      validateVaultAmount();
+    }
+    return result;
+  }
   function updateQuote(node, view) {
     const quantity = numeric(view.quantity.value);
     const buy = simulation.quote('buy', node.id, quantity);
     const sell = simulation.quote('sell', node.id, quantity);
-    view.quote.textContent = buy.ok ? 'Kauf: ' + number.format(buy.total) + ' CNX · Gebühr ' + interest.format(buy.fee) + ' · Slippage ' + interest.format(buy.slippage) + '. Verkauf: ' + (sell.ok ? number.format(sell.net) + ' CNX' : sell.message) : buy.message;
+    view.quantity.setAttribute('aria-invalid', String(!validInput(quantity, 0.000001, 1000, 6)));
+    const purchase = buy.ok ? number.format(buy.total) + ' CNX · Gebühr ' + interest.format(buy.fee) + ' · Slippage ' + interest.format(buy.slippage) : buy.message;
+    const sale = sell.ok ? number.format(sell.net) + ' CNX' : sell.message;
+    view.quote.textContent = 'Kauf: ' + purchase.replace(/\.$/, '') + '. Verkauf: ' + sale.replace(/\.$/, '') +
+      '. Verfügbar: ' + number.format(state.cash) + ' CNX · Bestand: ' + precise.format(node.quantity) + ' Anteile.';
     view.buy.disabled = !buy.ok || buy.total > state.cash;
     view.sell.disabled = !sell.ok || quantity > node.quantity;
   }
@@ -170,24 +195,31 @@
     article.setAttribute('data-tilt', '');
     const detailId = 'node-detail-' + index;
     const quantityId = 'node-quantity-' + index;
+    const quoteId = 'node-quote-' + index;
+    const feedbackId = 'node-feedback-' + index;
     article.innerHTML = '<button type="button" class="node-trigger" aria-expanded="false" aria-controls="' + detailId + '">' +
       '<span class="node-head"><span>0' + (index + 1) + ' / <span class="node-binding"></span></span><span class="node-symbol" aria-hidden="true">' + node.symbol + '</span></span>' +
       '<span class="node-name">' + node.id + '</span><span class="node-sector">' + node.sector + '</span>' +
-      '<span class="node-value"><span><span class="node-price"></span><small> CNX</small></span><small class="node-change"></small></span></button>' +
+      '<span class="node-value"><span><span class="node-price"></span><small> CNX</small></span><small class="node-change"></small></span>' +
+      '<span class="node-disclosure"><span class="node-disclosure-label">Details &amp; Aktionen</span><span class="node-disclosure-icon" aria-hidden="true">⌄</span></span></button>' +
       '<div id="' + detailId + '" class="node-details" aria-hidden="true" inert><div class="node-details-inner"><dl>' +
       '<div><dt>Sektor</dt><dd>' + node.sector + '</dd></div><div><dt>Liquidität</dt><dd class="node-liquidity"></dd></div>' +
       '<div><dt>Halbwertszeit</dt><dd class="node-half-life"></dd></div><div><dt>Validatoren</dt><dd class="node-validators"></dd></div>' +
       '<div><dt>Stärke</dt><dd class="node-strength"></dd></div><div><dt>Spread</dt><dd class="node-spread"></dd></div><div><dt>Simuliertes Risiko</dt><dd class="node-risk"></dd></div>' +
       '<div><dt>Bestand / Wert</dt><dd class="node-held"></dd></div></dl><div class="meter" aria-hidden="true"><i></i></div>' +
       '<div class="node-actions"><label class="control-label" for="' + quantityId + '">Anteile für ' + node.id + '</label>' +
-      '<input class="simulation-input node-quantity" id="' + quantityId + '" value="1" inputmode="decimal" maxlength="16">' +
-      '<p class="node-quote"></p><div class="simulation-controls"><button type="button" data-action="buy">Kaufen</button><button type="button" data-action="sell">Verkaufen</button></div>' +
-      '<div class="simulation-controls"><button type="button" class="node-link" data-action="link"></button><button type="button" data-action="stabilize">Stabilisieren (700 CNX)</button></div></div></div></div>';
+      '<input class="simulation-input node-quantity" id="' + quantityId + '" value="1" inputmode="decimal" maxlength="16" aria-describedby="' + quoteId + ' ' + feedbackId + '">' +
+      '<p class="node-quote" id="' + quoteId + '"></p><div class="simulation-controls"><button type="button" data-action="buy">Kaufen</button><button type="button" data-action="sell">Verkaufen</button></div>' +
+      '<div class="simulation-controls"><button type="button" class="node-link" data-action="link"></button><button type="button" data-action="stabilize">Stabilisieren (700 CNX)</button></div>' +
+      '<p class="node-feedback" id="' + feedbackId + '" role="status" aria-live="polite"></p></div></div></div>';
     const trigger = article.querySelector('.node-trigger');
-    trigger.setAttribute('aria-label', node.id + ' · ' + node.sector + ' · Details');
+    trigger.setAttribute('aria-label', node.id + ' · ' + node.sector + ' · Details und Aktionen öffnen');
     trigger.addEventListener('click', function () {
       const expanded = trigger.getAttribute('aria-expanded') !== 'true';
       trigger.setAttribute('aria-expanded', String(expanded));
+      trigger.setAttribute('aria-label', node.id + ' · ' + node.sector + (expanded ? ' · Details schließen' : ' · Details und Aktionen öffnen'));
+      article.querySelector('.node-disclosure-label').textContent = expanded ? 'Details schließen' : 'Details & Aktionen';
+      article.querySelector('.node-disclosure-icon').textContent = expanded ? '⌃' : '⌄';
       article.classList.toggle('open', expanded);
       article.querySelector('.node-details').setAttribute('aria-hidden', String(!expanded));
       article.querySelector('.node-details').inert = !expanded;
@@ -199,20 +231,48 @@
       halfLife: article.querySelector('.node-half-life'), validators: article.querySelector('.node-validators'),
       risk: article.querySelector('.node-risk'), held: article.querySelector('.node-held'), strength: article.querySelector('.node-strength'), spread: article.querySelector('.node-spread'),
       binding: article.querySelector('.node-binding'), link: article.querySelector('.node-link'), quantity: article.querySelector('.node-quantity'),
-      quote: article.querySelector('.node-quote'), buy: article.querySelector('[data-action="buy"]'), sell: article.querySelector('[data-action="sell"]')
+      quote: article.querySelector('.node-quote'), feedback: article.querySelector('.node-feedback'),
+      buy: article.querySelector('[data-action="buy"]'), sell: article.querySelector('[data-action="sell"]')
     };
     nodeViews.set(node.id, view);
     view.quantity.addEventListener('input', function () { updateQuote(state.nodes.find(function (item) { return item.id === node.id; }), view); });
     article.querySelectorAll('[data-action]').forEach(function (button) {
       button.setAttribute('aria-label', button.textContent + ' · ' + node.id);
       button.addEventListener('click', function () {
-        action(button.dataset.action, { id: node.id, quantity: numeric(view.quantity.value) });
+        action(button.dataset.action, { id: node.id, quantity: numeric(view.quantity.value) }, view.feedback);
       });
     });
     renderNode(node);
     nodeGrid.appendChild(article);
   });
   recurring(function () { simulation.tick(); }, 2200, true);
+
+  function renderVaultGuide() {
+    const guide = document.getElementById('vault-guide-status');
+    const link = document.getElementById('vault-guide-link');
+    if (!guide || !link) return;
+    const bound = state.nodes.filter(function (node) { return node.bound; }).length;
+    let message, destination, label;
+    if (state.vault.open) {
+      message = 'Dein Vault-Fenster ist offen. Lagere fiktive CNX ein oder verwalte deine Einlage.';
+      destination = '#terminal'; label = 'Zum offenen Vault';
+    } else if (bound < 3) {
+      message = bound + ' von 3 Knoten gebunden. Öffne die Knotendetails und binde ' + (3 - bound) + ' weitere ' + (bound === 2 ? 'Verbindung' : 'Verbindungen') + ' für je 1.200 CNX.';
+      destination = '#node-grid'; label = 'Knoten verbinden';
+    } else if (state.coherence < 35) {
+      message = 'Kohärenz ' + number.format(state.coherence) + ' % / benötigt 35 %. Stabilisiere einen Knoten, um die Kohärenz zu erhöhen.';
+      destination = '#node-grid'; label = 'Netzwerk stabilisieren';
+    } else if (state.stability < 75) {
+      message = 'Netzstabilität ' + number.format(state.stability) + ' % / benötigt 75 %. Stabilisiere einen Knoten für 700 CNX und prüfe das Zeitfenster erneut.';
+      destination = '#node-grid'; label = 'Netzwerk stabilisieren';
+    } else {
+      message = 'Dein Netzwerk ist bereit. Der Vault öffnet in Korona oder Freisteller. Manuelle Phasenwechsel kosten Kohärenz.';
+      destination = '#void'; label = 'Zum Zeitfenster';
+    }
+    guide.textContent = message;
+    link.href = destination;
+    link.textContent = label + ' →';
+  }
 
   function renderSimulation(next) {
     const previousPhase = state.phase;
@@ -249,6 +309,7 @@
     if (deposit) deposit.disabled = !state.vault.open;
     if (withdraw) withdraw.disabled = !state.vault.open || state.vault.balance <= 0;
     setText('vault-message', state.vault.open ? 'Das Fenster ist offen. Einlagern und Entnehmen sind möglich.' : state.vault.conditions.filter(function (condition) { return !condition.met; }).map(function (condition) { return condition.label; }).join(' · '));
+    renderVaultGuide();
     const pause = document.getElementById('simulation-pause');
     if (pause) { pause.textContent = state.paused ? 'Simulation fortsetzen' : 'Simulation pausieren'; pause.setAttribute('aria-pressed', String(state.paused)); }
     phaseButtons.forEach(function (button) { button.setAttribute('aria-pressed', String(Number(button.dataset.phase) === phaseIndex)); });
@@ -274,15 +335,16 @@
     document.dispatchEvent(new CustomEvent('cryonexus:simulation', { detail: state.visual }));
   }
 
-  function appendTerminal(text, kind) {
+  function appendTerminal(text, kind, forceScroll) {
     if (!terminalOutput) return;
+    const followingOutput = terminalOutput.scrollHeight - terminalOutput.scrollTop - terminalOutput.clientHeight <= 24;
     const line = document.createElement('p');
     line.className = 'terminal-' + (kind || 'response');
     // Terminal input never passes through HTML parsing.
     line.textContent = text;
     terminalOutput.appendChild(line);
     while (terminalOutput.children.length > 160) terminalOutput.firstElementChild.remove();
-    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    if (forceScroll || followingOutput) terminalOutput.scrollTop = terminalOutput.scrollHeight;
   }
   const script = ['CRYONEXUS / VAULT v.04', 'Kryo-Verbindung hergestellt …', '6 Knoten validiert. Schattenmarkt verfügbar.', 'Kerntemperatur −268 °C. Restlauf ∞.', 'Rolle erkannt: ZEITZEUGE. Vault-Zugang folgt dem Netzwerk.', 'Eingabe bereit. „help“ zeigt alle Befehle.'];
   appendTerminal(script[scriptIndex++], 'system');
@@ -301,13 +363,14 @@
     scriptStopped = true;
     finishJob(terminalJob);
     const response = window.CryoTerminal.run(raw, {
-      snapshot: simulation.snapshot, action: action, selectPhase: selectPhase,
+      snapshot: simulation.snapshot, action: function (type, payload) { return action(type, payload, null, false); },
+      selectPhase: function (index, manual) { return selectPhase(index, manual, false); },
       quote: simulation.quote, phases: phases, sceneCount: builtScenes.size, reduced: motion.matches
     });
     if (!response) return;
     if (response.clear) { if (terminalOutput) terminalOutput.replaceChildren(); return; }
-    appendTerminal('cryo@vault:~$ ' + raw.trim(), 'system');
-    appendTerminal(response.text, response.ok ? 'response' : 'error');
+    appendTerminal('cryo@vault:~$ ' + raw.trim(), 'system', true);
+    appendTerminal(response.text, response.ok ? 'response' : 'error', true);
   }
   const history = [];
   let historyIndex = 0;
@@ -334,10 +397,10 @@
     });
   }
 
-  function selectPhase(index, manual) {
+  function selectPhase(index, manual, live) {
     const result = simulation.selectPhase(index, { manual: manual !== false });
     if (manual !== false) {
-      announce(result);
+      announce(result, null, live);
       if (result.ok && phaseJob) { stopJob(phaseJob); startJob(phaseJob); }
     }
     return result;
@@ -352,11 +415,30 @@
   if (pauseButton) pauseButton.addEventListener('click', function () { action(state.paused ? 'resume' : 'pause'); });
   const stepButton = document.getElementById('simulation-step');
   if (stepButton) stepButton.addEventListener('click', function () { action('step'); });
+  const vaultAmount = document.getElementById('vault-amount');
+  function validateVaultAmount() {
+    if (!vaultAmount) return false;
+    const valid = validInput(numeric(vaultAmount.value), 0.0001, 100000000000, 4);
+    vaultAmount.setAttribute('aria-invalid', String(!valid));
+    const feedback = document.getElementById('vault-feedback');
+    if (feedback && !valid) {
+      feedback.textContent = 'Gib einen positiven Betrag bis 100.000.000.000 CNX mit höchstens vier Nachkommastellen ein. Komma und Punkt sind möglich.';
+      feedback.dataset.error = 'true'; feedback.dataset.validation = 'true';
+    } else if (feedback && feedback.dataset.validation === 'true') {
+      feedback.textContent = ''; delete feedback.dataset.error; delete feedback.dataset.validation;
+    }
+    return valid;
+  }
+  if (vaultAmount) {
+    vaultAmount.setAttribute('aria-describedby', 'vault-message vault-feedback');
+    vaultAmount.addEventListener('input', validateVaultAmount);
+    validateVaultAmount();
+  }
   ['deposit', 'withdraw'].forEach(function (type) {
     const button = document.getElementById('vault-' + type);
     if (button) button.addEventListener('click', function () {
-      const result = action(type, { amount: numeric(document.getElementById('vault-amount').value) });
-      setText('vault-message', result.message);
+      validateVaultAmount();
+      action(type, { amount: numeric(vaultAmount.value) }, document.getElementById('vault-feedback'));
     });
   });
   const resetButton = document.getElementById('simulation-reset');
@@ -496,8 +578,35 @@
     frameId = 0;
     lastFrame = 0;
   }
-  window.addEventListener('scroll', function () { if (!motion.matches) scrollDirty = true; }, { passive: true });
-  window.addEventListener('resize', function () { if (!motion.matches) scrollDirty = true; }, { passive: true });
+  let navigationTimer = 0;
+  function updateNavigation() {
+    navigationTimer = 0;
+    const reference = Math.min(window.innerHeight * 0.35, 260);
+    const current = sections.find(function (section) {
+      const rect = section.getBoundingClientRect();
+      return rect.top <= reference && rect.bottom > reference;
+    }) || sections.find(function (section) { return section.getBoundingClientRect().bottom > reference; });
+    navigationLinks.forEach(function (link) {
+      const target = document.getElementById(link.hash.slice(1));
+      const targetSection = target && (target.classList.contains('section') ? target : target.closest('.section'));
+      if (current && targetSection === current) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    });
+  }
+  function scheduleNavigation() {
+    if (!navigationTimer) navigationTimer = window.setTimeout(updateNavigation, 80);
+  }
+  window.addEventListener('scroll', function () {
+    if (!motion.matches) scrollDirty = true;
+    scheduleNavigation();
+  }, { passive: true });
+  window.addEventListener('resize', function () {
+    if (!motion.matches) scrollDirty = true;
+    scheduleNavigation();
+  }, { passive: true });
+  window.addEventListener('hashchange', scheduleNavigation);
+  window.addEventListener('load', updateNavigation);
+  updateNavigation();
 
   function audioState(enabled, available) {
     if (!audioButton) return;
@@ -526,14 +635,7 @@
       if (token === audioToken) { audioDesired = false; audioState(false, false); }
     });
   }
-  function firstPointer(event) {
-    if (event.target.closest('#zen-start, #zen-controls') || (audioButton && audioButton.contains(event.target))) return;
-    document.removeEventListener('pointerdown', firstPointer);
-    requestAudio(true);
-  }
-  document.addEventListener('pointerdown', firstPointer, { passive: true });
   if (audioButton) audioButton.addEventListener('click', function () {
-    document.removeEventListener('pointerdown', firstPointer);
     requestAudio(!audioDesired);
   });
 

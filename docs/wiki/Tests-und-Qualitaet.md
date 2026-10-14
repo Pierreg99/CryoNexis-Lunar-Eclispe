@@ -2,6 +2,8 @@
 
 **[Handbuch](Home.md) / Nachweise**
 
+Die Prüfung vom **14. Oktober 2026** deckt alle elf Suites mit 14 lokalen HTTP-Szenarien, zwei Bedienungs-Browserabläufen und 18 reinen Testgruppen ab. Kombinierte Vollversuche trafen Grafik-Wartegrenzen; die betroffenen Prüfungen bestanden separat mit unveränderten Assertions. Details stehen im [Prüfbericht](../../VERIFICATION.md).
+
 Der dokumentierte vollständige Lauf vom **10. Oktober 2026** bestand zehn Modell-Testgruppen und zehn HTTP-Browserdurchläufe mit Chromium 151.0.7922.173. Der maßgebliche [Prüfbericht](../../VERIFICATION.md) enthält Ergebnisse und Messgrenzen.
 
 Die Terminal-Erweiterung vom 11. Oktober ergänzt einschließlich CRYO-Freischaltung fünf reine Terminal-Testgruppen und gezielte Browserprüfungen. Die vorherige Vollprüfung der Engine wird dadurch nicht als neu ausgeführter Hardwaretest ausgegeben.
@@ -13,6 +15,8 @@ npm ci
 npx playwright install chromium
 npm test
 ```
+
+Zusätzlich führt `npm test` zwei Browserprüfungen für die Bedienung aus: bewusste Klangaktivierung, lokale Belege, Mengengrenzen, Vault-Leitfaden, Neustart-Validierung, aktive Navigation und lesbare mobile Eingaben. Separat: `node tests/usability.cjs`.
 
 Die App in `dist/` benötigt keine dieser Entwicklungsabhängigkeiten. `npm run test:simulation` prüft nur das reine Modell.
 
